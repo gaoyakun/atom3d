@@ -1,0 +1,417 @@
+﻿<forest>
+	<resources>
+		<weberparams name='lombardy poplar'>
+			<format>arbaro-xml</format>
+			<file>data/arbaro-xml/lombardy_poplar.xml</file>
+		</weberparams>
+		<texture name='trunk'><file>data/textures/vertical_bark.jpg</file></texture>
+		<texture name='branch'><file>data/textures/bark.jpg</file></texture>
+		<texture name='leaf'><file>data/textures/leaf.png</file></texture>
+		<texture name='billboard1_c'><new x='512' y='512' /></texture>
+		<texture name='billboard1_n'><new x='512' y='512' /></texture>
+		<texture name='billboard1_d'><new x='512' y='512' /></texture>
+		<texture name='billboard2_c'><new x='512' y='512' /></texture>
+		<texture name='billboard2_n'><new x='512' y='512' /></texture>
+		<texture name='billboard2_d'><new x='512' y='512' /></texture>
+		<vertexlist>list1</vertexlist>
+	</resources>
+	<factories>
+		<factory name='lombardy poplar'>
+			<generator name='arbaro-weber'>
+				<params>lombardy poplar</params>
+				<seed>4</seed>
+			</generator>
+			<mesh name='trunk_1'>
+				<from>0</from>
+				<to>30</to>
+				<vertexlist>list1</vertexlist>
+				<type name='stem'>
+					<level>0</level>
+					<curveres>10</curveres>
+					<circleres>6</circleres>
+					<texture>trunk</texture>
+				</type>
+			</mesh>
+			<mesh name='branches'>
+				<from>0</from>
+				<to>30</to>
+				<vertexlist>list1</vertexlist>
+				<type name='stem'>
+					<level>1</level>
+					<curveres>6</curveres>
+					<circleres>6</circleres>
+					<texture>branch</texture>
+				</type>
+			</mesh>
+			<mesh name='subbranches'>
+				<from>0</from>
+				<to>0</to>
+				<vertexlist>list1</vertexlist>
+				<type name='stem'>
+					<level>2</level>
+					<curveres>5</curveres>
+					<circleres>4</circleres>
+					<texture>branch</texture>
+				</type>
+			</mesh>
+			<mesh name='subbranches2'>
+				<from>0</from>
+				<to>0</to>
+				<vertexlist>list1</vertexlist>
+				<type name='stem'>
+					<level>3</level>
+					<curveres>5</curveres>
+					<circleres>4</circleres>
+					<texture>branch</texture>
+				</type>
+			</mesh>
+			<mesh name='leaves'>
+				<from>0</from>
+				<to>30</to>
+				<vertexlist>list1</vertexlist>
+				<type name='leaves'>
+					<texture>leaf</texture>
+				</type>
+			</mesh>
+			<mesh name='leaves_billboard_x'>
+				<from>30</from>
+				<to>300</to>
+				<vertexlist>list1</vertexlist>
+				<type name='billboard'>
+					<source>leaves</source>
+					<source>trunk_1</source>
+					<source>branches</source>
+					<source>subbranches</source>
+					<texture>billboard1_c</texture>
+					<normals>billboard1_n</normals>
+					<depth>billboard1_d</depth>
+					<uv u0='0' u1='1' v0='0' v1='1' />
+					<transform>
+						<rot x='0' y='0' z='0' />
+					</transform>
+				</type>
+			</mesh>
+			<mesh name='leaves_billboard_x2'>
+				<from>30</from>
+				<to>300</to>
+				<vertexlist>list1</vertexlist>
+				<type name='billboard'>
+					<source>trunk_1</source>
+					<source>leaves</source>
+					<source>branches</source>
+					<source>subbranches</source>
+					<texture>billboard2_c</texture>
+					<normals>billboard2_n</normals>
+					<depth>billboard2_d</depth>
+					<uv u0='0' u1='1' v0='0' v1='1' />
+					<transform>
+						<rot x='0' y='0' z='180' />
+					</transform>
+				</type>
+			</mesh>
+		</factory>
+	</factories>
+	<objects>
+		<object name='tree1'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='0' z='0' />
+			</transform>
+		</object>
+		<object name='tree2'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='0' z='0' />
+			</transform>
+		</object>
+		<object name='tree3'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-10' z='0' />
+			</transform>
+		</object>
+		<object name='tree4'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-10' z='0' />
+			</transform>
+		</object>
+		<object name='tree5'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-20' z='0' />
+			</transform>
+		</object>
+		<object name='tree6'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-20' z='0' />
+			</transform>
+		</object>
+		<object name='tree7'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-30' z='0' />
+			</transform>
+		</object>
+		<object name='tree8'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-30' z='0' />
+			</transform>
+		</object>
+		<object name='tree9'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-40' z='0' />
+			</transform>
+		</object>
+		<object name='tree10'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-40' z='0' />
+			</transform>
+		</object>
+		<object name='tree11'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-50' z='0' />
+			</transform>
+		</object>
+		<object name='tree12'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-50' z='0' />
+			</transform>
+		</object>
+		<object name='tree13'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-60' z='0' />
+			</transform>
+		</object>
+		<object name='tree14'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-60' z='0' />
+			</transform>
+		</object>
+		<object name='tree15'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-70' z='0' />
+			</transform>
+		</object>
+		<object name='tree16'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-70' z='0' />
+			</transform>
+		</object>
+		<object name='tree17'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-80' z='0' />
+			</transform>
+		</object>
+		<object name='tree18'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-80' z='0' />
+			</transform>
+		</object>
+		<object name='tree19'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-90' z='0' />
+			</transform>
+		</object>
+		<object name='tree20'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-90' z='0' />
+			</transform>
+		</object>
+		<object name='tree21'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-100' z='0' />
+			</transform>
+		</object>
+		<object name='tree22'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-100' z='0' />
+			</transform>
+		</object>
+		<object name='tree23'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-110' z='0' />
+			</transform>
+		</object>
+		<object name='tree24'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-110' z='0' />
+			</transform>
+		</object>
+		<object name='tree25'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-120' z='0' />
+			</transform>
+		</object>
+		<object name='tree26'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-120' z='0' />
+			</transform>
+		</object>
+		<object name='tree27'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-130' z='0' />
+			</transform>
+		</object>
+		<object name='tree28'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-130' z='0' />
+			</transform>
+		</object>
+		<object name='tree29'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-140' z='0' />
+			</transform>
+		</object>
+		<object name='tree30'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-140' z='0' />
+			</transform>
+		</object>
+		<object name='tree31'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-150' z='0' />
+			</transform>
+		</object>
+		<object name='tree32'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-150' z='0' />
+			</transform>
+		</object>
+		<object name='tree33'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-160' z='0' />
+			</transform>
+		</object>
+		<object name='tree34'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-160' z='0' />
+			</transform>
+		</object>
+		<object name='tree35'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-170' z='0' />
+			</transform>
+		</object>
+		<object name='tree36'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-170' z='0' />
+			</transform>
+		</object>
+		<object name='tree37'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-180' z='0' />
+			</transform>
+		</object>
+		<object name='tree38'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-180' z='0' />
+			</transform>
+		</object>
+		<object name='tree39'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-190' z='0' />
+			</transform>
+		</object>
+		<object name='tree40'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-190' z='0' />
+			</transform>
+		</object>
+		<object name='tree41'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-200' z='0' />
+			</transform>
+		</object>
+		<object name='tree42'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-200' z='0' />
+			</transform>
+		</object>
+		<object name='tree43'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-210' z='0' />
+			</transform>
+		</object>
+		<object name='tree44'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-210' z='0' />
+			</transform>
+		</object>
+		<object name='tree45'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-220' z='0' />
+			</transform>
+		</object>
+		<object name='tree46'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-220' z='0' />
+			</transform>
+		</object>
+		<object name='tree47'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-230' z='0' />
+			</transform>
+		</object>
+		<object name='tree48'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-230' z='0' />
+			</transform>
+		</object>
+		<object name='tree49'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='10' y='-240' z='0' />
+			</transform>
+		</object>
+		<object name='tree50'>
+			<factory>lombardy poplar</factory>
+			<transform>
+				<translate x='-10' y='-240' z='0' />
+			</transform>
+		</object>
+	</objects>
+</forest>
+	

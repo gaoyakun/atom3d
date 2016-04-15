@@ -1,0 +1,8 @@
+SubDir TOP src renderer ;
+
+Library renderer : [ Wildcard *.cpp *.h ] 
+	[ Wildcard [ ConcatDirs ../../include/renderer ] : *.h ]
+	: noinstall ;
+Help renderer : "OpenTree Renderer: shared among the examples" ;
+ExternalLibs renderer : SDL SDL_image GL GLU CG CGGL ;
+

@@ -1,0 +1,7 @@
+SubDir TOP src tinyxml ;
+
+Library tinyxml : [ Wildcard *.cpp *.h ] 
+	[ Wildcard [ ConcatDirs ../../include/tinyxml ] : *.h ]
+	: noinstall ;
+Help tinyxml : "TinyXML: 3rd party XML parsing library" ;
+

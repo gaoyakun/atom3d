@@ -1,0 +1,6 @@
+SubDir TOP examples treegen ;
+
+Application treegen : [ Wildcard *.cpp *.h ] : console ;
+LinkWith treegen : opentree weberarbaro tinyxml ;
+Help treegen : "Lean and mean tree generator" ;
+

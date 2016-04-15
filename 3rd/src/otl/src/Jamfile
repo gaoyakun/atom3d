@@ -1,0 +1,11 @@
+SubDir TOP src ;
+
+Library opentree :
+ [ Wildcard mesher : *.cpp *.h ] 
+ [ Wildcard utils : *.cpp *.h ] 
+ [ Wildcard weber : *.cpp *.h ] : shared ;
+
+SubInclude TOP src renderer ;
+SubInclude TOP src tinyxml ;
+SubInclude TOP src weberarbaro ;
+

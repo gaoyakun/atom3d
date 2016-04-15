@@ -1,0 +1,346 @@
+/**	\file animatedtexturechannel.h
+ *	渲染相关的一些枚举量和结构的声明.
+ *
+ *	\author 高雅昆
+ *	\addtogroup render
+ *	@{
+ */
+
+#ifndef __ATOM_GLRENDER_GFXTYPES_H
+#define __ATOM_GLRENDER_GFXTYPES_H
+
+#if _MSC_VER > 1000
+# pragma once
+#endif
+
+// Data types
+#define ATOM_GFX_IS_VALID_TYPE(type) ((type) >= ::TYPE_INT && (type) <= ::TYPE_DOUBLE)
+
+/*
+  Indicates which memory type should the resource use.
+  ATOM_USAGE_STATIC usually in the local memory (video memory).
+  ATOM_USAGE_DYNAMIC usually in the AGP memory.
+  ATOM_USAGE_STOREONLY usually in the system memory. (currently not used)
+*/
+enum ATOM_USAGE
+{
+  ATOM_USAGE_STATIC,
+  ATOM_USAGE_DYNAMIC,
+  ATOM_USAGE_STOREONLY,
+};
+
+/*
+  Indicates the lock method.
+  This is just a hint. You could write into a locked buffer with ATOM_LOCK_READONLY,
+  and read from a locked buffer with ATOM_LOCK_WRITEONLY. But maybe causes a performance
+  down.
+*/
+enum ATOM_LockMode {
+  ATOM_LOCK_READONLY,
+  ATOM_LOCK_WRITEONLY,
+  ATOM_LOCK_READWRITE,
+};
+
+//  Compare function
+#define GFX_IS_VALID_COMPARE_FUNC(func) ((func) >= ::ATOM_COMPAREFUNC_LESSEQUAL && (func) <= ::ATOM_COMPAREFUNC_ALWAYS)
+
+# define ATOM_GFX_MAP_TO_D3D_COMPARE_FUNC(func) ::CompareFuncTable[func]
+extern unsigned const CompareFuncTable[];
+
+enum ATOM_COMPAREMODE
+{
+  ATOM_COMPAREFUNC_LESSEQUAL,
+  ATOM_COMPAREFUNC_LESS,
+  ATOM_COMPAREFUNC_GREATEREQUAL,
+  ATOM_COMPAREFUNC_GREATER,
+  ATOM_COMPAREFUNC_EQUAL,
+  ATOM_COMPAREFUNC_NOTEQUAL,
+  ATOM_COMPAREFUNC_NEVER,
+  ATOM_COMPAREFUNC_ALWAYS,
+};
+
+/*
+  Indicates the Matrix mode.
+  MATRIX_VIEW is the camera space to world space transform.
+  MATRIX_WORLD is the object space to world space transform.
+  MATRIX_PROJECTION is the projection transform.
+  MATRIX_TEXTURE is the texture coordinates transform.
+*/
+enum ATOM_MATRIXMODE
+{
+  ATOM_MATRIXMODE_VIEW,
+  ATOM_MATRIXMODE_WORLD,
+  ATOM_MATRIXMODE_PROJECTION,
+  ATOM_MATRIXMODE_MODELVIEW,     // Read only
+  ATOM_MATRIXMODE_VIEWPROJ,		// Read only
+  ATOM_MATRIXMODE_MVP,           // Read only
+  ATOM_MATRIXMODE_INV_WORLD,     // Read only
+  ATOM_MATRIXMODE_INV_VIEW,      // Read only
+  ATOM_MATRIXMODE_INV_PROJECTION,// Read only
+  ATOM_MATRIXMODE_INV_MODELVIEW, // Read only
+  ATOM_MATRIXMODE_INV_MVP        // Read only
+};
+
+/*
+  Indicates the culling mode.
+  CULL_FRONT means cull the front faces.
+  CULL_BACK means cull the back faces.
+  CULL_NONE means do not cull any face.
+*/
+enum ATOM_CULLMODE
+{
+  ATOM_CULLMODE_FRONT,
+  ATOM_CULLMODE_BACK,
+  ATOM_CULLMODE_NONE,
+  ATOM_CULLMODE_ALL
+};
+
+/*
+  Indicates the vertex order in a polygon.
+  WINDING_CW means clock-wise order.
+  WINDING_CCW means reversed clock-wise order;
+*/
+enum ATOM_FRONTFACE
+{
+  ATOM_FRONTFACE_CW,
+  ATOM_FRONTFACE_CCW,
+};
+
+//  Shade mode.
+#define ATOM_GFX_IS_VALID_SHADE_MODE(mode) ((mode) >= ATOM_SHADEMODE_SMOOTH && (mode) <= ATOM_SHADEMODE_FLAT)
+
+# define ATOM_GFX_MAP_TO_D3D_SHADE_MODE(mode) ::ShadeModeTable[mode]
+extern unsigned const ShadeModeTable[];
+
+enum ATOM_SHADEMODE
+{
+  ATOM_SHADEMODE_SMOOTH,
+  ATOM_SHADEMODE_FLAT,
+};
+
+#define ATOM_GFX_IS_VALID_FILL_MODE(mode) ((mode) >= ATOM_FILLMODE_SOLID && (mode) <= ATOM_FILLMODE_POINT)
+
+# define ATOM_GFX_MAP_TO_D3D_FILL_MODE(mode) ::FillModeTable[mode]
+extern unsigned const FillModeTable[];
+
+//  Fill mode.
+enum ATOM_FILLMODE
+{
+  ATOM_FILLMODE_SOLID,
+  ATOM_FILLMODE_LINE,
+  ATOM_FILLMODE_POINT,
+};
+
+//  Blend mode.
+#define ATOM_GFX_IS_VALID_BLEND_FUNC(func) ((func) >= ATOM_BLENDFUNC_ZERO && (func) <= ATOM_BLENDFUNC_INV_CONSTCOLOR)
+
+# define ATOM_GFX_MAP_TO_D3D_BLEND_FUNC(func) ::BlendModeTable[func]
+extern unsigned const BlendModeTable[];
+
+enum ATOM_BLENDFUNC
+{
+  ATOM_BLENDFUNC_ZERO,
+  ATOM_BLENDFUNC_ONE,
+  ATOM_BLENDFUNC_SRCCOLOR,
+  ATOM_BLENDFUNC_DSTCOLOR,
+  ATOM_BLENDFUNC_SRCALPHA,
+  ATOM_BLENDFUNC_DSTALPHA,
+  ATOM_BLENDFUNC_CONSTCOLOR,
+  ATOM_BLENDFUNC_INV_SRCCOLOR,
+  ATOM_BLENDFUNC_INV_DSTCOLOR,
+  ATOM_BLENDFUNC_INV_SRCALPHA,
+  ATOM_BLENDFUNC_INV_DSTALPHA,
+  ATOM_BLENDFUNC_INV_CONSTCOLOR
+};
+
+//  Blend operation
+#define ATOM_GFX_IS_VALID_BLEND_OP(op) ((op) >= ::ATOM_BLENDOP_ADD && (op) <= ::ATOM_BLENDOP_MIN)
+
+# define ATOM_GFX_MAP_TO_D3D_BLEND_OP(op) ::BlendOpTable[op]
+extern unsigned const BlendOpTable[];
+
+enum ATOM_BLENDOP
+{
+  ATOM_BLENDOP_ADD,
+  ATOM_BLENDOP_SUB,
+  ATOM_BLENDOP_MAX,
+  ATOM_BLENDOP_MIN
+};
+
+//  Stencil face
+enum ATOM_STENCILFACE
+{
+  ATOM_STENCILFACE_FRONT,
+  ATOM_STENCILFACE_BACK
+};
+
+//  Stencil operation
+#define ATOM_GFX_IS_VALID_STENCIL_OP(op) ((op) >= ::ATOM_STENCILOP_KEEP && (op) <= ::ATOM_STENCILOP_DEC)
+
+# define ATOM_GFX_MAP_TO_D3D_STENCIL_OP(op) ::StencilOpTable[op]
+extern unsigned const StencilOpTable[];
+
+enum ATOM_STENCILOP
+{
+  ATOM_STENCILOP_KEEP,
+  ATOM_STENCILOP_ZERO,
+  ATOM_STENCILOP_REPLACE,
+  ATOM_STENCILOP_INCWRAP,
+  ATOM_STENCILOP_DECWRAP,
+  ATOM_STENCILOP_INVERT,
+  ATOM_STENCILOP_INC,
+  ATOM_STENCILOP_DEC
+};
+
+//  color material
+enum ATOM_COLORMATERIAL
+{
+  ATOM_COLORMATERIAL_MATERIAL,
+  ATOM_COLORMATERIAL_DIFFUSE,
+  ATOM_COLORMATERIAL_EMISSION,
+  ATOM_COLORMATERIAL_AMBIENT
+};
+
+//  Fog table mode
+#define ATOM_GFX_IS_VALID_FOG_MODE(mode) ((mode) >= ::ATOM_FOGMODE_EXP && (mode) <= ::ATOM_FOGMODE_LINEAR)
+
+# define ATOM_GFX_MAP_TO_D3D_FOG_MODE(mode) ::FogModeTable[mode]
+extern unsigned const FogModeTable[];
+
+enum ATOM_FOGMODE
+{
+  ATOM_FOGMODE_EXP,
+  ATOM_FOGMODE_EXP2,
+  ATOM_FOGMODE_LINEAR
+};
+
+#define ATOM_GFX_IS_VALID_TEXTURE_COORD(mode) ((mode) >= ::ATOM_TEXTURECOORD_S && (mode) <= ::ATOM_TEXTURECOORD_Q)
+
+enum ATOM_TEXCOORD
+{
+  ATOM_TEXTURECOORD_S,
+  ATOM_TEXTURECOORD_T,
+  ATOM_TEXTURECOORD_R,
+  ATOM_TEXTURECOORD_Q
+};
+
+//  Texture wrapping
+#define ATOM_GFX_IS_VALID_TEXTURE_ADDRESS(mode) ((mode) >= ATOM_TEXTUREWRAP_REPEAT && (mode) <= ATOM_TEXTUREWRAP_MIRRORED_REPEAT)
+
+# define ATOM_GFX_MAP_TO_D3D_TEXTURE_ADDRESS(mode) ::TexAddressTable[mode]
+extern unsigned const TexAddressTable[];
+
+enum ATOM_TEXTUREWRAP
+{
+  ATOM_TEXTUREWRAP_UNKNOWN = -1,
+  ATOM_TEXTUREWRAP_REPEAT = 0,
+  ATOM_TEXTUREWRAP_CLAMP,
+  ATOM_TEXTUREWRAP_BORDER,
+  ATOM_TEXTUREWRAP_MIRROR,
+  ATOM_TEXTUREWRAP_MIRRORED_REPEAT
+};
+
+//  Texture blend operation
+#define ATOM_GFX_IS_VALID_TEXTURE_BLEND_OP(mode) ((mode) >= ATOM_TEXTUREBLENDOP_DISABLE && (mode) < ATOM_TEXTUREBLENDOP_NUM)
+
+# define ATOM_GFX_MAP_TO_D3D_TEXTURE_BLEND_OP(mode) ::TexBlendOpTable[mode]
+extern unsigned const TexBlendOpTable[];
+
+enum ATOM_TEXBLENDOP
+{
+  ATOM_TEXTUREBLENDOP_DISABLE,
+  ATOM_TEXTUREBLENDOP_ARG1,
+  ATOM_TEXTUREBLENDOP_ARG2,
+  ATOM_TEXTUREBLENDOP_MODULATE,
+  ATOM_TEXTUREBLENDOP_ADD,
+  ATOM_TEXTUREBLENDOP_ADDSIGNED,
+  ATOM_TEXTUREBLENDOP_DOT3,
+  ATOM_TEXTUREBLENDOP_LERP,
+  ATOM_TEXTUREBLENDOP_BLENDTEXTUREALPHA,
+
+  ATOM_TEXTUREBLENDOP_NUM,
+};
+
+//  Texture auto generate mode
+#define ATOM_GFX_IS_VALID_TEXTURE_GEN_MODE(mode) ((mode) >= ATOM_TEXTUREGEN_OBJECTSPACE && (mode) <= ATOM_TEXTUREGEN_NORMAL_MAP)
+
+enum ATOM_TEXGEN
+{
+  ATOM_TEXTUREGEN_UNKNOWN = -1,
+  ATOM_TEXTUREGEN_IDENTITY,
+  ATOM_TEXTUREGEN_OBJECTSPACE,
+  ATOM_TEXTUREGEN_EYESPACE,
+  ATOM_TEXTUREGEN_SPHEREMAP,
+  ATOM_TEXTUREGEN_REFLECTION_MAP,
+  ATOM_TEXTUREGEN_NORMAL_MAP,
+};
+
+//  Texture blend argument
+#define ATOM_GFX_IS_VALID_TEXTURE_BLEND_ARG(mode) ((mode) >= ATOM_TEXTUREBLENDARG_PREVIOUS && (mode) <= ATOM_TEXTUREBLENDARG_TEXTUREFACTOR)
+
+enum ATOM_TEXBLENDARG
+{
+  ATOM_TEXTUREBLENDARG_NONE,
+  ATOM_TEXTUREBLENDARG_PREVIOUS,
+  ATOM_TEXTUREBLENDARG_DIFFUSE,
+  ATOM_TEXTUREBLENDARG_TEXTURE,
+  ATOM_TEXTUREBLENDARG_TEXTUREFACTOR,
+  ATOM_TEXTUREBLENDARGMOD_ALPHAONLY = 0x8000,
+  ATOM_TEXTUREBLENDARGMOD_INVERT = 0x4000,
+  ATOM_TEXTUREBLENDARGMOD_MASK = ATOM_TEXTUREBLENDARGMOD_ALPHAONLY | ATOM_TEXTUREBLENDARGMOD_INVERT,
+};
+
+//  Texture filter type
+#define ATOM_GFX_IS_VALID_TEXTURE_FILTER_TYPE(mode) ((mode) >= ATOM_TEXTUREFILTERTYPE_MIN && (mode) <= ATOM_TEXTUREFILTERTYPE_MAG)
+
+enum ATOM_TEXFILTERMODE
+{
+  ATOM_TEXTUREFILTERTYPE_MIN,
+  ATOM_TEXTUREFILTERTYPE_MAG,
+  ATOM_TEXTUREFILTERTYPE_MIP
+};
+
+//  Texture filter
+#define ATOM_GFX_IS_VALID_TEXTURE_FILTER(mode) ((mode) >= ATOM_TEXTUREFILTER_NONE && (mode) <= ATOM_TEXTUREFILTER_ANISOTROPIC)
+
+enum ATOM_TEXFILTER
+{
+  ATOM_TEXTUREFILTER_UNKNOWN = -1,
+  ATOM_TEXTUREFILTER_NONE = 0,
+  ATOM_TEXTUREFILTER_NEAREST,
+  ATOM_TEXTUREFILTER_LINEAR,
+  ATOM_TEXTUREFILTER_ANISOTROPIC
+};
+
+//  Primitive type.
+#define ATOM_GFX_IS_VALID_PRIMITIVE_TYPE(mode) ((mode) >= ATOM_PRIMITIVE_TRIANGLES && (mode) <= ATOM_PRIMITIVE_POINTS)
+
+# define ATOM_GFX_MAP_TO_D3D_PRIMITIVE_TYPE(mode) ::PrimTypeTable[mode]
+extern unsigned const PrimTypeTable[];
+
+enum ATOM_PRIMITIVETYPE
+{
+  ATOM_PRIMITIVE_TRIANGLES,
+  ATOM_PRIMITIVE_TRIANGLE_STRIP,
+  ATOM_PRIMITIVE_TRIANGLE_FAN,
+  ATOM_PRIMITIVE_LINES,
+  ATOM_PRIMITIVE_LINE_STRIP,
+  ATOM_PRIMITIVE_POINTS,
+};
+
+// light type
+enum ATOM_LIGHTTYPE
+{
+  ATOM_LIGHTTYPE_NONE,
+  ATOM_LIGHTTYPE_POINT,
+  ATOM_LIGHTTYPE_SPOT,
+  ATOM_LIGHTTYPE_DIRECTIONAL,
+};
+
+// max active light count
+enum 
+{
+  ATOM_MAX_LIGHT_COUNT = 8
+};
+#endif // __ATOM_GLRENDER_GFXTYPES_H
+/*! @} */

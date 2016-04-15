@@ -1,0 +1,10 @@
+SubDir TOP examples forest ;
+
+Application forest
+    : [ Wildcard *.cpp *.h ] 
+;
+
+LinkWith forest : weberarbaro tinyxml renderer opentree ;
+ExternalLibs forest : SDL SDL_image GL GLU ;
+Help forest : "Forest featuring different trees and their LOD" ;
+

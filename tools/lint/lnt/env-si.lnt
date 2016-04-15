@@ -1,0 +1,38 @@
+/* 
+    env-si.lnt: The environment file to run PC-lint from within the
+    Source Insight Editor.
+
+    To set up Source Insight to run PC-lint from a custom command
+    do the following:
+
+    1)  Select custom commands from the options menu.
+
+	a)  Enter "PC-lint unit check" as the Name of the new command.
+ 
+        b)  Enter in the run edit box the following:
+       
+                c:\lint\lint -u -ic:\lint std env-si %f
+
+            Where c:\lint is your lint directory.  
+
+        c)  Check the following check boxes/radio buttons
+       
+                Iconic Window
+                Capture Output
+                Save Files First
+                Parse Links in Output
+		File, then Line
+
+        d)  Enter the following expression in the Pattern edit box
+        
+		^\([^ ]*\) \([0-9]+\)
+
+	    This indicates that Messages are identified by:
+	    File-name blank line-number
+
+    In order to run PC-lint, select from the Options menu the
+    Custom Commands.  Then select PC-lint from the Command
+    and click on the run button.
+*/
+-"format=%f %l %t %n: %m"
+-hfa_3

@@ -1,0 +1,15 @@
+/*  env-om.lnt: environment parameters Object Master
+    The following options were transcribed from an E-mail kindly
+    supplied by John Osen.
+ */
+
+
+-"format=ERROR %(%F  %l%:)%t - %n - %m"     //  Messages will contain
+	//  file information (%F), the line number (%l), the
+	//  message number (%n), message type (%t) and message text (%m).
+
+-hF2    //  Make sure we ALWAYS provide file information ('F') and use 2
+	//  lines (line in error plus message).
+
+-width(0) //  don't break messages at any particular width
+

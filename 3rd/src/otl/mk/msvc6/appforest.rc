@@ -1,0 +1,59 @@
+// This file is generated automatically.
+
+1 VERSIONINFO
+FILEVERSION 0, 1, 0, 0
+PRODUCTVERSION 0, 1, 0, 0
+#ifdef CS_DEBUG
+FILEFLAGS 0x1
+#else
+FILEFLAGS 0x0
+#endif
+{
+  BLOCK "StringFileInfo"
+  {
+    BLOCK "040904E4"
+    {
+      VALUE "ProductName", "OpenTree 3D Tree Generation Library"
+      VALUE "ProductVersion", "0.1.0"
+      VALUE "FileVersion", "0.1.0"
+      VALUE "LegalCopyright", "Copyright (c) 2004 Pascal Kirchdorfer, Seth Yastrov"
+      VALUE "FileDescription", "forest"
+#ifdef CS_DEBUG
+      VALUE "Comments", "Debug build"
+#else
+      VALUE "Comments", "Release build"
+#endif
+      VALUE "WWW", "http://opentreelib.sourceforge.net/"
+    }
+  }
+}
+// This file is generated automatically.
+
+1 24
+{
+  "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>\r\n",
+  "<assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"">\r\n",
+  "<assemblyIdentity\r\n",
+  "    version=""",
+  "0.1.0.0",
+  """\r\n",
+  "    processorArchitecture=""X86""\r\n",
+  "    name=""OpenTree 3D Tree Generation Library""\r\n",
+  "    type=""win32""\r\n",
+  "/>\r\n",
+  "<description>forest</description>\r\n",
+  "<dependency>\r\n",
+  "    <dependentAssembly>\r\n",
+  "	  <assemblyIdentity\r\n",
+  "	      type=""win32""\r\n",
+  "	      name=""Microsoft.Windows.Common-Controls""\r\n",
+  "	      version=""6.0.0.0""\r\n",
+  "	      processorArchitecture=""X86""\r\n",
+  "	      publicKeyToken=""6595b64144ccf1df""\r\n",
+  "	      language=""*""\r\n",
+  "	  />\r\n",
+  "    </dependentAssembly>\r\n",
+  "</dependency>\r\n",
+  "</assembly>\r\n"
+}
+1 ICON "../../data/opentree.ico"

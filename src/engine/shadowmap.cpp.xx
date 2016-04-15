@@ -1,0 +1,56 @@
+#include "StdAfx.h"
+#include "shadowmap.h"
+
+void ATOM_ShadowMap::setLightParams (const ATOM_Vector3f &lightDir, float lightRadius)
+{
+	setLightParamsImpl (lightDir, lightRadius);
+}
+
+void ATOM_ShadowMap::mergeShadowCaster (const ATOM_BBox &bbox)
+{
+	ATOM_BBox boxT = bbox;
+	boxT.transform (_view);
+	boxT.transform (_lightSpaceBasis);
+
+	_casterBBox = boxT;
+
+	for (unsigned i = 0; i < 8; ++i)
+	{
+		_casterVertex[i] = _casterBBox.point(i);
+	}
+}
+
+void ATOM_ShadowMap::mergeShadowReciever (const ATOM_BBox &bbox)
+{
+	ATOM_BBox boxT = bbox;
+	boxT.transform (_view);
+
+	_receiverBBox = boxT;
+
+	for (unsigned i = 0; i < 8; ++i)
+	{
+		_receiverVertex[i] = _receiverBBox.point(i);
+	}
+}
+
+void ATOM_ShadowMap::mergeFrustum (const ATOM_Frustum3d &frustum)
+{
+}
+
+void ATOM_ShadowMap::beginShadowMapGen (ATOM_RenderDevice *device, bool renderToTexture, bool renderShadowMap, bool unitCubeClipping)
+{
+}
+
+void ATOM_ShadowMap::endShadowMapGen (ATOM_RenderDevice *device, bool renderToTexture)
+{
+}
+
+void ATOM_ShadowMap::prepareShadowMap (ATOM_RenderDevice *device)
+{
+}
+
+const ATOM_Matrix4x4f &ATOM_ShadowMap::getLightViewProjMatrix (void) const
+{
+	return getLightViewProjMatrixImpl ();
+}
+

@@ -1,0 +1,87 @@
+TOP ?= "@top_srcdir@" ;
+BUILDTOP ?= "@top_builddir@" ;
+
+SubDir TOP ;
+
+IncludeDir src ;
+IncludeDir $(BUILDTOP) : : literal transient ;
+IncludeDir "include" ;
+
+CleanDir clean :
+    out ;
+Clean distclean :
+    aclocal.m4
+    config.h
+    config.h.in~
+    config.log
+    config.status
+    config.status.lineno
+    config.cache
+    configure.lineno
+    Jamconfig
+    Jamfile ;
+CleanDir distclean :
+    autom4te.cache ;
+Depends distclean : clean ;
+
+Clean maintainerclean :
+  config.h.in
+  configure ;
+Depends maintainerclean : distclean ;
+
+Help distclean : "Remove built targets and configuration" ;
+Help maintainerclean :
+    "Remove built targets, configuration, and generated files." ;
+
+MsvcGenSubDir TOP mk msvc6 : 6 ;
+MsvcGenSubDir TOP mk msvc7 : 7 ;
+MsvcGenSubDir TOP mk msvc8 : 8 ;
+MsvcGenTemplateDir TOP mk msvcgen ;
+MsvcGenWorkspace "opentree" ;
+
+# Set project-specific compiler and linker options for msvcgen.
+#MsvcDefine MY_DEFINE : "my value" ;
+#MsvcDefine MY_RELEASE_DEFINE : "my release value" : release ;
+#MsvcDefine MY_DEBUG_DEFINE : "my debug value" : debug ;
+#MsvcCFlags : "/I \"my\\inc\\path\"" : release ;
+#MsvcCFlags : "/I \"my\\debuginc\\path\"" : debug ;
+#MsvcLFlags : "/libpath:\"my\\lib\\path\"" : release ;
+#MsvcLFlags : "/libpath:\"my\\debuglib\\path\"" : debug ;
+#MsvcGenConfig MSVC.LIBRARY : supercool.lib ;
+#MsvcGenConfig MSVC.LIBRARY_DEBUG : supercooldebug.lib ;
+
+MsvcGenConfig GL.AVAILABLE : yes ;
+MsvcGenConfig GL.DEFINES ;
+MsvcGenConfig GL.CFLAGS ;
+MsvcGenConfig GL.LFLAGS ;
+MsvcGenConfig GL.LIBS : opengl32.lib ;
+
+MsvcGenConfig GLU.AVAILABLE : yes ;
+MsvcGenConfig GLU.DEFINES ;
+MsvcGenConfig GLU.CFLAGS ;
+MsvcGenConfig GLU.LFLAGS ;
+MsvcGenConfig GLU.LIBS : glu32.lib ;
+
+MsvcGenConfig SDL.AVAILABLE : yes ;
+MsvcGenConfig SDL.DEFINES ;
+MsvcGenConfig SDL.CFLAGS ;
+MsvcGenConfig SDL.LFLAGS ;
+MsvcGenConfig SDL.LIBS : sdl.lib sdlmain.lib ;
+
+MsvcGenConfig SDL_image.AVAILABLE : yes ;
+MsvcGenConfig SDL_image.DEFINES ;
+MsvcGenConfig SDL_image.CFLAGS ;
+MsvcGenConfig SDL_image.LFLAGS ;
+MsvcGenConfig SDL_image.LIBS : sdl_image.lib ;
+
+MsvcGenConfig CG.AVAILABLE : yes ;
+MsvcGenConfig CG.DEFINES : HAS_CG ;
+MsvcGenConfig CG.CFLAGS ;
+MsvcGenConfig CG.LFLAGS ;
+MsvcGenConfig CG.LIBS : cg.lib cgGL.lib ;
+
+SubInclude TOP src ;
+SubInclude TOP examples ;
+SubInclude TOP docs ;
+SubInclude TOP include ;
+

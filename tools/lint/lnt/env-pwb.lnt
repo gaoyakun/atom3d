@@ -1,0 +1,44 @@
+/*
+    env-pwb.lnt: environment parameters for Microsoft's PWB
+
+    If you are using the Microsoft PWB and you wish to invoke
+    PC-lint from that environment then do the following.  The
+    net result is that you will then automatically be able to move from
+    error to error using the Shift-F3 (Next) and Shift-F4 (Previous) keys.
+
+    Add the following lines (or suitable variations of them)
+    to the TOOLS.INI file (found in the directory specified
+    by the INIT environment variable).
+
+[pwb-.cpp]
+PC-lint:= arg arg "c:\\lint\\lint.exe   \
+    -ic:\\lint  -u std.lnt  env-pwb.lnt  "  curfile compile
+PC-lint:Alt+L
+
+    Notes:
+    o   Substitute your own lint path (in 2 places above) if different
+	from the default.
+    o   There must be at least two blanks before the \ that is
+	used as a continuation (this is VERY important).
+    o   Please note the use of the double "\\".  This is equally important.
+    o   This sequence will define the key Alt+L to initiate a lint
+	session; alter as required or desired.
+    o   The hot key will only be activated with ".cpp" files.  (that is the
+	significance of the [pwb-.cpp].
+    o   The file std.lnt is the same as appears in your lin.bat file.
+    o   This will only do a unit checkout.  To do an entire project,
+	set up a similar command with a different Hot Key.
+ */
+
+
+//  Messages will contain file information (%F), the line number (%l),
+//  the column number (first column = 1) (%C), message type (%t)
+//  message number (%n) and message text (%m).
+-"format=%(%F %l %C :%) %t %n: %m"
+
+//  Make sure we ALWAYS provide file information ('F') and use 2
+//  lines (line in error plus message).
+-hF2
+
+//  don't break messages at any particular width
+-width(0)

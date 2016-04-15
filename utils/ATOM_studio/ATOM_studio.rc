@@ -1,0 +1,178 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Chinese (Simplified, PRC) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DDSOPT DIALOGEX 0, 0, 316, 231
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "DDS文件优化"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "开始",IDSTART,205,210,50,14
+    PUSHBUTTON      "退出",IDEXIT,259,210,50,14
+    LTEXT           "这个工具检查某个目录中的所有DDS文件，如果这个文件是DXT3或者DXT5格式的并且不含Alpha通道或者仅含黑白二值的Alpha通道，这个文件将会被转换为DXT1格式，这样可以节约下来一半的内存空间和硬盘空间。",IDC_STATIC,7,7,302,30
+    EDITTEXT        IDC_DIRECTORY,48,43,242,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "..",IDC_SELECTDIR,292,43,17,14
+    LTEXT           "选择目录:",IDC_STATIC,7,46,37,8
+    LISTBOX         IDC_FILELIST,7,81,302,120,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "强制转换(不检查Alpha通道)",IDC_FORCED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,214,111,10
+    LTEXT           "",IDC_CURRENTFILE,7,66,302,8
+END
+
+IDD_TTFVIEWER DIALOGEX 0, 0, 316, 209
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "TTF字体查看器"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,205,188,50,14
+    PUSHBUTTON      "保存...",IDSAVE,259,188,50,14
+    LTEXT           "选择字体文件:",IDC_STATIC,9,9,52,8
+    EDITTEXT        IDC_TTFFILENAME,66,7,224,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "...",IDC_BTN_SELECT_FONT,293,7,16,14
+    GROUPBOX        "字体属性",IDC_STATIC,7,29,302,155
+    COMBOBOX        IDC_FACENAME,53,40,249,92,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "选择字体:",IDC_STATIC,12,43,38,8
+    GROUPBOX        "特性",IDC_STATIC,14,59,80,119
+    CONTROL         "矢量字体",IDC_FLAGS_SCALABLE,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,74,48,10
+    CONTROL         "内嵌点阵字体",IDC_FLAGS_FIXED_SIZE,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,84,64,10
+    CONTROL         "固定宽度",IDC_FLAGS_FIXED_WIDTH,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,94,48,10
+    CONTROL         "横向布局",IDC_FLAGS_HAS_H_METRICS,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,104,48,10
+    CONTROL         "纵向布局",IDC_FLAGS_HAS_V_METRICS,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,114,48,10
+    CONTROL         "字距调整",IDC_FLAGS_HAS_KERNING,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,124,48,10
+    CONTROL         "内嵌Hinter",IDC_FLAGS_HAS_HINTER,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_DISABLED | WS_TABSTOP,23,134,51,10
+    GROUPBOX        "字符集",IDC_STATIC,99,59,82,58
+    GROUPBOX        "其他",IDC_STATIC,188,59,114,119
+    LISTBOX         IDC_CHARMAP_LIST,105,70,71,41,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_TTFMISC,192,72,106,74,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+    GROUPBOX        "点阵",IDC_STATIC,100,120,81,58
+    LISTBOX         IDC_FIXEDSIZES,106,133,70,38,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_UPDATEPROMPT DIALOGEX 0, 0, 251, 87
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ATOM3D编辑器"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "知道了",IDOK,194,65,50,14
+    LTEXT           "ATOM3D已经更新,请卸载当前版本并下载新版本安装使用.",IDC_STATIC,7,11,237,16
+    LTEXT           "下载地址:",IDC_STATIC,7,28,36,8
+    CONTROL         "<a>http://192.168.19.80/ATOM3D/update/</a>",IDC_UPDATESERVER,
+                    "SysLink",WS_TABSTOP,45,28,190,14
+    LTEXT           "新版特性:",IDC_STATIC,7,47,36,8
+    CONTROL         "<a>http://192.168.19.80/ATOM3D/update/changes.html</a>",IDC_CHANGES,
+                    "SysLink",WS_TABSTOP,47,47,190,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_DDSOPT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 224
+    END
+
+    IDD_TTFVIEWER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 202
+    END
+
+    IDD_UPDATEPROMPT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 244
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 79
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTURE
+//
+
+IDR_TOPMOSTENVMAP       TEXTURE                 "media\\x.dds"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "media\\app.ico"
+#endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

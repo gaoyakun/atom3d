@@ -1,0 +1,5 @@
+
+//  lib-corb.lnt
+// PC-lint options for the CORBA header files.
+
+-esym( 1075, CORBA )        // CORBA is used both as a class and as a constant

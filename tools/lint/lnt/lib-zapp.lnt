@@ -1,0 +1,17 @@
+
+//  lib-zapp.lnt
+//  Library Options file for Inmarks's zApp
+
+-elib(726)      // extraneous comma in enumdef.hpp
+-elib(1505)     // zDlist is inherited from zLink without access specifier
+-elib(1509)     // zPlink does not have a virtual destructor
+-elib(1510)     // zTextStream is a base class with no destructor
+-elib(601)      // type assumed int occurs frequently
+-elib(745)      // undefined function return value assumed int
+-elib(1724)     // non-const arguments can be passed to copy constructor
+
+// non-virtual destructors
+-esym(1512,zDrawObj,zSlist,zTimer,zRegion,zLink,zPListIter,zPlink,zPlist)
+
+-dZ_DB=1        // zApp debugging on (may be changed or remove)
+-dZ_NP=0        // zApp persistant objects on (may be changed or removed)

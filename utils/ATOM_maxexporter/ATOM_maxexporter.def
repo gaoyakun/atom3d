@@ -1,0 +1,9 @@
+LIBRARY ATOM_maxexporter.dle
+EXPORTS
+   CanAutoDefer			@1		 PRIVATE
+   LibClassDesc         @2       PRIVATE
+   LibDescription       @3       PRIVATE
+   LibNumberClasses     @4       PRIVATE
+   LibVersion           @5       PRIVATE
+SECTIONS
+   .data READ WRITE

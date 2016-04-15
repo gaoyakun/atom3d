@@ -1,0 +1,15 @@
+INCLUDE_DIRECTORIES("${ATOM3D_INCLUDE_DIR}/net")
+INCLUDE_DIRECTORIES("${THIRDPART_DIR}/include")
+
+AUX_SOURCE_DIRECTORY(. NetSrc)
+FILE(GLOB NetPrivateHeaders *.h)
+FILE(GLOB NetPublicHeaders ${ATOM3D_INCLUDE_DIR}/net/*.h)
+SET(NetSrcHeaders ${NetSrc} ${NetPrivateHeaders})
+SOURCE_GROUP(headers FILES ${NetPublicHeaders})
+SOURCE_GROUP(source FILES ${NetSrcHeaders})
+
+ADD_DEFINITIONS(-DBUILD_ATOM_NET)
+ADD_LIBRARY(ATOM_net ${ATOM3D_SHARED} ${NetSrcHeaders} ${NetPublicHeaders})
+TARGET_LINK_LIBRARIES(ATOM_net ATOM_dbghlp)
+
+INSTALL_TARGET(ATOM_net)

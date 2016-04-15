@@ -1,0 +1,16 @@
+
+//  lib-tv.lnt
+// Library Options file for Turbo-Vision
+
+
+-elib(569)             // initializes an int (evMessage) with a 0xFF00
+-elib(763)              // some declarations within headers get repeated
+-elib(1706)             // declaration with scope operator
+
+-esym(578,delta)        // parameter name hides member name
+-esym(1038,seek_dir)   // ios::seek_dir assumed for seek_dir
+-esym(1509,THWMouse)    // base class destructor is not virtual
+-esym(1510,TNSSortedCollection,TStreamable,TProgInit,TWindowInit)
+    // these are destructor-less base classes of classes with destructors
+-esym(1512,THWMouse)    // base class destructor is not virtual
+-esym(1730,TEvent)      // uses both 'struct TEvent' and 'class TEvent'

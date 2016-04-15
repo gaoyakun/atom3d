@@ -1,0 +1,36 @@
+if ! $(BUILDTOP)
+{
+BUILDTOP = . ;
+}
+
+# Include configuration.
+JAMCONFIG ?= $(BUILDTOP)/Jamconfig ;
+include $(JAMCONFIG) ;
+
+# Set up compiler flags.
+# Unfortunately, we can not use FDefines here since Boost Jam does not have it,
+# and we have not yet included mk/jam/build.jam which provides an emulation
+# layer for Boost.  We can not include build.jam earlier because these flags
+# need to be defined before build.jam is included.  :-(
+COMPILER.CFLAGS = -Wall -Wno-unknown-pragmas ;
+COMPILER.CFLAGS.optimize = -O3 -fomit-frame-pointer -ffast-math ;
+COMPILER.CFLAGS.debug = -g3 -DCS_DEBUG ;
+COMPILER.CFLAGS.profile += -g3 -pg -O0 ;
+COMPILER.LFLAGS.profile += -g3 -pg ;
+
+# Include CS build rules
+include $(TOP)/mk/jam/build.jam ;
+
+ApplicationIconDefault win32 : gui : opentree.ico : $(TOP) data ;
+ApplicationIconDefault macosx : gui : opentree.ico : $(TOP) data ;
+
+# Include the BUILDTOP dir, because it contains config.h
+IncludeDir $(BUILDTOP) ;
+
+# also add the src dir as include directory
+IncludeDir $(TOP)/src ;
+
+IncludeDir $(TOP)/src/opentree ;
+
+IncludeDir $(TOP)/include ;
+

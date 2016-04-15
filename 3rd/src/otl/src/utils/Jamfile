@@ -1,0 +1,7 @@
+SubDir TOP src utils ;
+
+Library utils : [ Wildcard *.cpp *.h ] 
+	[ Wildcard [ ConcatDirs ../../include/opentree/utils ] : *.h ]
+	: noinstall ;
+Help utils : "Opentree utilities library" ;
+

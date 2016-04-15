@@ -1,0 +1,42 @@
+struct app2vertex {
+	float4 Position : POSITION;
+	float3 Normal : NORMAL;
+	float2 TexCoord : TEXCOORD0;
+	float3 Tangent : TEXCOORD1;
+	float3 BiNormal : TEXCOORD2;
+};
+
+struct vertex2fragment { 
+	float4 Position : POSITION;
+	float2 TexCoord : TEXCOORD0;
+	float3 oLightDir : TEXCOORD1;
+	float3 oEyeVec : TEXCOORD2;
+	float4 Color : COLOR0;
+};
+
+vertex2fragment main (app2vertex IN,
+	uniform float4x4 ModelViewI,
+	uniform float4x4 ModelViewIT,
+	uniform float4x4 ModelViewProj,
+	uniform float4 lightcolor,
+	uniform float4 LightPos)
+{
+	vertex2fragment OUT; 
+	
+	float3 Attenuation = float3(1.0,1.0,1.0);
+	
+	float3 eyeNormal = normalize (mul (ModelViewIT, float4(1.0,1.0,1.0,0.0) )).xyz;
+	float3 eyeVertex = mul (ModelViewI, IN.Position).xyz;
+
+	float3 vertToLight = LightPos.xyz - eyeVertex;
+	float d = length (vertToLight);
+	float3 attParams = float3 (1.0f, d, d*d);
+	vertToLight *= rsqrt (d);
+      
+	OUT.Position = mul (ModelViewProj, IN.Position);
+	OUT.TexCoord = IN.TexCoord;
+	float3 stuff = lightcolor.xyz * dot (eyeNormal, vertToLight) * dot (attParams, Attenuation);
+	OUT.Color = float4(stuff,1.0);
+	
+	return OUT;
+}

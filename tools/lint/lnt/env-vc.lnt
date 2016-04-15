@@ -1,0 +1,37 @@
+/*
+    env-vc.lnt: environment parameters for Microsoft's Visual C++ WorkBench
+
+    If you are using the Microsoft Visual Workbench and you wish to invoke
+    PC-lint from that environment then do the following.
+
+    Consult the appropriate Microsoft documentation in the "Visual
+    Workbench User's Guide", Chapter "Customizing Visual Workbench".
+
+    From the Options Menu, Select the Tools command and Select "Add"
+    First select the PC-lint directory (say C:\LINTPP)
+    and then select the file to be run, presumably LINT.EXE.
+    Provide the following information (or some suitable variation):
+
+    Command Line        C:\LINTPP\LINT.EXE
+    Menu Text           PC-lint (unit check)
+    Arguments           -iC:\LINTPP -u std.lnt env-vc.lnt $FileName
+    Initial Directory   $FileDir
+
+    This will result in the Tools menu containing the additional item
+    "PC-lint (unit check)".
+
+    Note that by providing an "Initial Directory" and a local "$FileName"
+    the containing directory can have a std.lnt that overrides the
+    global std.lnt.  Also file-names in messages are not so long.
+
+    You will probably want to heed the following advice from the
+    Microsoft documentation:  "To keep an MS-DOS window open with the
+    output of a command-line tool after the tool has been run
+    from the Tools menu, use the Windows PIF Editor to edit the
+    file _DEFAULT.PIF and clear the Close Window on Exit check box."
+    Also PC-lint can be run as a windowed application so you may
+    want to check that box too.
+
+ */
+
+

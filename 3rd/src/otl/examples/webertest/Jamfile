@@ -1,0 +1,6 @@
+SubDir TOP examples webertest ;
+
+Application webertest : [ Wildcard *.cpp *.h ] : console ;
+LinkWith webertest : opentree weberarbaro tinyxml ;
+Help webertest : "The weber test application" ;
+

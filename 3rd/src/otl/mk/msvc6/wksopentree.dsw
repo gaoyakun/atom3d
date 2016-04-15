@@ -1,0 +1,158 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "appforest"=.\appforest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libopentree
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name librenderer
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libtinyxml
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libweberarbaro
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "apptreegen"=.\apptreegen.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libopentree
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libtinyxml
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libweberarbaro
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "apptreeview"=.\apptreeview.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libopentree
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name librenderer
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libtinyxml
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libweberarbaro
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "appwebertest"=.\appwebertest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libopentree
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libtinyxml
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libweberarbaro
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "libopentree"=.\libopentree.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "librenderer"=.\librenderer.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libtinyxml"=.\libtinyxml.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libweberarbaro"=.\libweberarbaro.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libopentree
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

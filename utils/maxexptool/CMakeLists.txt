@@ -1,0 +1,5 @@
+AUX_SOURCE_DIRECTORY(. MaxExpToolSrc)
+
+ADD_EXECUTABLE(MaxExpTool WIN32 ${MaxExpToolSrc})
+
+INSTALL_TARGET(MaxExpTool)

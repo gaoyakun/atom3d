@@ -1,0 +1,9 @@
+-i".\lnt\"
+lib-stl.lnt
+co-msc60.lnt
+co-msc.lnt
+lib-w32.lnt
+lib-win.lnt
+lib-wnt.lnt
+env-vc6.lnt
+env-vc.lnt

@@ -1,0 +1,6 @@
+SubDir TOP examples ;
+
+SubInclude TOP examples forest ;
+SubInclude TOP examples treegen ;
+SubInclude TOP examples treeview ;
+SubInclude TOP examples webertest ;

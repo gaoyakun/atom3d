@@ -1,0 +1,53 @@
+//lib-oinv.lnt
+// .lnt file for the Silicon Graphics/Template Graphics
+//      Open Inventor Library
+// Contributed by:
+//      Michael S. Scherotter
+//      Tartus Development, Inc.
+// begin Open Inventor.lnt
+
+-emacro(*,SO_*)
+-sem(SoAction::apply,1p)
+
+-sem(SoGroup::SoGroup, 1n > 0)
+-sem(SoGroup::addChild, 1p)
+-sem(SoGroup::insertChild, 1p, 2n >= 0)
+-sem(SoGroup::getChild, r_null, 1n >= 0)
+-sem(SoGroup::findChild, 1p)
+-sem(SoGroup::removeChild, 1n >= 0)
+-sem(SoGroup::removeChild, 1p)
+-sem(SoGroup::replaceChild, 1n >= 0, 2p)
+-sem(SoGroup::replaceChild, 1p, 2p)
+
+-sem(SoNode::getByName,r_null)
+
+-sem(SoFieldContainer::fieldsAreEqual, 1p)
+-sem(SoFieldContainer::copyFieldValues, 1p)
+-sem(SoFieldContainer::set, 1p)
+-sem(SoFieldContainer::getField, r_null)
+-sem(SoFieldContainer::getFieldName, 1p)
+
+-sem(SoField::set, 1p)
+-sem(SoField::connectFrom, 1p)
+-sem(SoField::appendConnection, 1p)
+-sem(SoField::disconnect, 1p)
+
+-sem(SoCamera::viewAll, 1p)
+
+-sem(SoSensor::setFunction, 1p)
+-sem(SoSensor::getFunction, r_null)
+-sem(SoSensor::getData, r_null)
+
+-sem(SoEngine::getOutput, r_null)
+-sem(SoEngine::getOutputName, 1p)
+-sem(SoEngine::getByName, r_null)
+
+-sem(SoBaseKit::getClassNodekitCatalog, r_null)
+-sem(SoBaseKit::getNodekitCatalog, r_null)
+-sem(SoBaseKit::getPart, r_null)
+-sem(SoBaseKit::getPathToPart, r_null)
+-sem(SoBaseKit::set,1p, 2p)
+
+//end Open Inventor.lnt
+
+

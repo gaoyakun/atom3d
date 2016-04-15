@@ -1,0 +1,63 @@
+[% FILTER null;
+#==============================================================================
+# TemplateToolkit2 template for MSVC8 solution (sln) file.
+# Copyright (C) 2004 by Eric Sunshine <sunshine@sunshineco.com>
+#
+#    This library is free software; you can redistribute it and/or modify it
+#    under the terms of the GNU Library General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or (at your
+#    option) any later version.
+#
+#    This library is distributed in the hope that it will be useful, but
+#    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+#    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+#    License for more details.
+#
+#    You should have received a copy of the GNU Library General Public License
+#    along with this library; if not, write to the Free Software Foundation,
+#    Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#==============================================================================
+  PROCESS macros.tlib;
+  PROCESS control.tlib;
+
+  my = {};
+  load(respfile, 'doc');
+  FOREACH f IN my.doc.customize; PROCESS $f | null; END;
+
+  projects = filter(my.doc.project).split('\|').sort;
+  guids = {};
+  FOREACH project IN projects;
+    guids.$project = guid(project);
+  END;
+END -%]
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual C++ Express 2005
+[% FOREACH project IN projects -%]
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "[% project %]", "
+    [%- project %].vcproj", "{[% guids.$project %]}"
+	ProjectSection(ProjectDependencies) = postProject
+[% FOREACH dep IN filter(my.doc.$project).split('\|') -%]
+		{[% guids.$dep %]} = {[% guids.$dep %]}
+[% END -%]
+	EndProjectSection
+EndProject
+[% END -%]
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+[% n = 0; FOREACH build IN builds -%]
+		[% build.name %]|Win32 = [% build.name %]|Win32
+[% END -%]
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+[% FOREACH project IN projects; g = guids.$project -%]
+[% FOREACH build IN builds -%]
+		{[% g %]}.[% build.name %]|Win32.ActiveCfg = [% build.name %]|Win32
+		{[% g %]}.[% build.name %]|Win32.Build.0 = [% build.name %]|Win32
+[% END -%]
+[% END -%]
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

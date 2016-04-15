@@ -1,0 +1,140 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(中华人民共和国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG_CALLSTACK DIALOGEX 0, 0, 227, 269
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Assertion failed!"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "继续",IDC_CONTINUE,7,248,32,14
+    PUSHBUTTON      "结束程序",IDC_ABORT,73,248,37,14
+    PUSHBUTTON      "中断",IDC_BREAK,42,248,29,14
+    CONTROL         "",IDC_STACKTREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_DISABLEDRAGDROP | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,39,213,130,WS_EX_CLIENTEDGE
+    EDITTEXT        IDC_FILENAME,7,7,213,14,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+    EDITTEXT        IDC_LINENO,7,20,213,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+    EDITTEXT        IDC_ERRMSG,7,175,213,43,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
+    PUSHBUTTON      "复制到剪贴板",IDC_COPYTOCLIPBOARD,165,248,55,14
+    EDITTEXT        IDC_HIDENEDIT,93,193,40,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    PUSHBUTTON      "内存清单..",IDC_MEMLOG,165,224,55,14
+    PUSHBUTTON      "内存块..",IDC_MEMBLOCK,113,224,50,14
+END
+
+IDD_ADDRESS DIALOGEX 0, 0, 215, 229
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "内存地址"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "查看",IDOK,7,208,50,14
+    PUSHBUTTON      "取消",IDCANCEL,158,208,50,14
+    LTEXT           "请输入内存地址(十六进制表示):",IDC_STATIC,7,8,125,8
+    EDITTEXT        IDC_ADDRESS,7,20,201,14,ES_AUTOHSCROLL
+    CONTROL         "用户内存",IDC_USERBLOCK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,8,48,10
+    EDITTEXT        IDC_ALLOCDETAIL,7,57,201,143,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
+    LTEXT           "内存分配详细信息:",IDC_STATIC,7,45,68,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_DIALOG_CALLSTACK, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 220
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 262
+    END
+
+    IDD_ADDRESS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 208
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 222
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // 中文(中华人民共和国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 英语(美国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // 英语(美国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

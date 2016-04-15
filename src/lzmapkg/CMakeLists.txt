@@ -1,0 +1,14 @@
+INCLUDE_DIRECTORIES("${ATOM3D_INCLUDE_DIR}/lzmapkg")
+
+AUX_SOURCE_DIRECTORY(. LZMAPkgSrc)
+FILE(GLOB LZMAPkgPrivateHeaders *.h)
+FILE(GLOB LZMAPkgPublicHeaders ${ATOM3D_INCLUDE_DIR}/lzmapkg/*.h)
+SET(LZMAPkgSrcHeaders ${LZMAPkgSrc} ${LZMAPkgPrivateHeaders})
+SOURCE_GROUP(headers FILES ${LZMAPkgPublicHeaders})
+SOURCE_GROUP(source FILES ${LZMAPkgSrcHeaders})
+
+ADD_DEFINITIONS(-DBUILD_ATOM_LZMAPKG)
+ADD_LIBRARY(ATOM_lzmapkg ${ATOM3D_SHARED} ${LZMAPkgSrcHeaders} ${LZMAPkgPublicHeaders})
+TARGET_LINK_LIBRARIES(ATOM_lzmapkg)
+
+INSTALL_TARGET(ATOM_lzmapkg)

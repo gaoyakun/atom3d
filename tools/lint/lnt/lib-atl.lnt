@@ -1,0 +1,13 @@
+
+    // These options were necessary to quietly process headers:
+    // atlbase.h and atlcom.h
+
+-elib(618)             // unusual order 'const static ...'
+
+// The following option had been used to suppress messages prior to
+// our supporting __declspec(selectany)
+// -elibsym(14,31)
+
+-esym(665,ATL::ATLTRY) // unparenthesized macro parameter
+-esym(1512,CThreadLocalObject)   // this base classe has a destructor that is not virtual
+-esym(1512,CProcessLocalObject)  // this base classe has a destructor that is not virtual

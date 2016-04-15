@@ -1,0 +1,24 @@
+The following lists some general conventions and suggestions to follow when writing OpenTree code.
+
+Conventions:
+  - Interfaces will be prefixed with i* and Classes with ot*
+  - Helper classes will neither be in the opentree namespace nor have an ot* prefix.
+  - Don't use prefixes for class names, use namespaces instead.
+  - Use PascalCase for class/namespace names.
+  - Use camelCase for member functions.
+  - Use selfexplaining names.
+  - Use 2 spaces for indents. No tabs.
+  - Put start and end braces on their own lines.
+  - Code should compile without warnings.
+  - Favour static over dynamic allocation where possible.
+  - Filenames: Source-Files: .cpp Header-Files: .h
+  - Lines longer than 80 columns should be avoided.
+
+Suggestions:
+  - Try to allocate memory in groups, if you need 100 objects, allocate them at once.
+  - Use initialization lists in constructors.
+  - Use assert() generously to stop execution at improper situations to avoid weird bugs.
+  - Don't use more than 3 levels of indentation (if you do, fix your design).
+  - Write clean code first, then optimize only if code is critical and can be kept readable.
+  - Macros should only be used to encapsulate debugging aids such as assert().
+  - Name functions by the verbNoun style like getNormal(), runInCircles().

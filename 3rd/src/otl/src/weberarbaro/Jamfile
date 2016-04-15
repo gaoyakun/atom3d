@@ -1,0 +1,6 @@
+SubDir TOP src weberarbaro ;
+
+Library weberarbaro : [ Wildcard *.cpp *.h ] : noinstall ;
+LinkWith weberarbaro : opentree ;
+Help weberarbaro : "The weber tree generation library from arbaro" ;
+

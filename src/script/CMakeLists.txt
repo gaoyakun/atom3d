@@ -1,0 +1,20 @@
+INCLUDE_DIRECTORIES("${ATOM3D_INCLUDE_DIR}/script")
+INCLUDE_DIRECTORIES("${THIRDPART_DIR}/include/lua")
+
+AUX_SOURCE_DIRECTORY(. ScriptSrc)
+AUX_SOURCE_DIRECTORY(lua LuaSrc)
+FILE(GLOB ScriptPrivateHeaders *.h)
+FILE(GLOB LuaPrivateHeaders lua/*.h)
+FILE(GLOB ScriptPublicHeaders ${ATOM3D_INCLUDE_DIR}/script/*.h)
+SET(ScriptSrcHeaders ${ScriptSrc} ${ScriptPrivateHeaders})
+SET(LuaSrcHeaders ${LuaSrc} ${LuaPrivateHeaders}) 
+SOURCE_GROUP(headers FILES ${ScriptPublicHeaders})
+SOURCE_GROUP(source FILES ${ScriptSrcHeaders})
+SOURCE_GROUP(lua FILES ${LuaSrcHeaders})
+
+ADD_DEFINITIONS(-DBUILD_ATOM_SCRIPT)
+ADD_LIBRARY(ATOM_script ${ATOM3D_SHARED} ${ScriptSrcHeaders} ${LuaSrcHeaders} ${ScriptPublicHeaders})
+ADD_DEPENDENCIES(ATOM_script ATOM_kernel)
+TARGET_LINK_LIBRARIES(ATOM_script ATOM_kernel debug lua51d optimized lua51)
+
+INSTALL_TARGET(ATOM_script)

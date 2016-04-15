@@ -1,0 +1,12 @@
+SubDir TOP examples treeview ;
+
+# construct a new application target and use all .cpp and .hpp files in this
+# directory as sources
+Application treeview
+    : [ Wildcard *.cpp *.h ] 
+;
+
+LinkWith treeview : opentree weberarbaro tinyxml renderer ;
+ExternalLibs treeview : SDL SDL_image GL GLU ;
+Help treeview : "An example application" ;
+

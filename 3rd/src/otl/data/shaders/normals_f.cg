@@ -1,0 +1,10 @@
+struct vfconn
+{
+	float4 HPOS : POSITION;
+	float4 COL0 : COLOR0;
+};
+
+float4 main (vfconn IN) : COLOR
+{
+	return IN.COL0;
+}

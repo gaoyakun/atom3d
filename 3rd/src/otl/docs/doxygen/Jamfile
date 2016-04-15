@@ -1,0 +1,10 @@
+SubDir TOP docs doxygen ;
+
+if $(CMD.DOXYGEN)
+{
+OTLDOXY_FILES = [ Wildcard *.css *.png ] ;
+Doxygen apihtml    : pubapi.dox : html api    : $(OTLDOXY_FILES) ;
+Doxygen apidevhtml : devapi.dox : html apidev : $(OTLDOXY_FILES) ;
+Help apihtml    : "Build the public API reference manual"    ;
+Help apidevhtml : "Build the developer API reference manual" ;
+}

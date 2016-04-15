@@ -1,0 +1,504 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 非特定语言(系统默认值) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEUSD)
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_SYS_DEFAULT
+#pragma code_page(936)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_EXPORTER DIALOGEX 0, 0, 167, 293
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "atom导出插件"
+FONT 9, "宋体", 400, 0, 0x86
+BEGIN
+    CTEXT           "ATOM模型导出插件 作者:高雅昆",IDC_STATIC,7,7,153,16
+    GROUPBOX        "模型选项",IDC_STATIC,7,23,153,100
+    CONTROL         "导出顶点颜色",IDC_EXPORTCOLOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,37,142,10
+    CONTROL         "漫反射贴图存入共享目录",IDC_SHAREDIFFUSEMAP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,87,143,10
+    CONTROL         "法线贴图存入共享目录",IDC_SHARENORMALMAP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,105,140,10
+    PUSHBUTTON      "目录设定..",IDC_SETUPDIR,109,267,48,14
+    DEFPUSHBUTTON   "导出",IDC_EXPORT,66,267,41,14
+    CONTROL         "导出顶点透明度",IDC_EXPORTVERTEXALPHA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,54,93,10
+    GROUPBOX        "动画选项",IDC_STATIC,7,128,153,131
+    PUSHBUTTON      "编辑动作..",IDC_OPT_VERTEXANIM,109,218,47,15
+    CONTROL         "导出动作",IDC_EXPOPT_ACTIONS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,145,57,10
+    CONTROL         "导出顶点网格",IDC_EXPOPT_MESHES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,145,71,10
+    PUSHBUTTON      "查看骨骼..",IDC_VIEWSKELETONS,59,237,47,15
+    CONTROL         "导出骨骼",IDC_EXPOPT_SKELETONS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,161,53,10
+    CONTROL         "双面材质",IDC_DOUBLESIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,70,119,10
+    CONTROL         "保存动画设置",IDC_SAVEANIMATION_SETTINGS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,161,64,10
+    PUSHBUTTON      "查看材质..",IDC_VIEWMATERIALS,11,237,45,15
+    PUSHBUTTON      "查看网格..",IDC_VIEWMESHES,109,237,47,15
+    PUSHBUTTON      "自定义属性..",IDC_MODELPROPS,12,267,49,14
+    LTEXT           "Pose来源:",IDC_STATIC,17,201,39,8
+    COMBOBOX        IDC_BINDPOSE,61,199,94,71,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "按骨骼名称自动选择(pu_/pd_)",IDC_SELECTBONEBYNAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,177,124,10
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_EXPORTER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 160
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 281
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // 非特定语言(系统默认值) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(中华人民共和国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_KEYFRAME_OPTIONS DIALOGEX 0, 0, 271, 202
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "动画选项"
+FONT 9, "宋体", 400, 0, 0x86
+BEGIN
+    CONTROL         "固定步长",IDC_FIXED_KEYFRAME,"Button",BS_AUTORADIOBUTTON,16,20,48,10
+    EDITTEXT        IDC_FRAMEINTERVAL,76,19,188,14,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNLEFT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_TABSTOP,66,19,10,14
+    DEFPUSHBUTTON   "确定",IDOK,191,181,36,14
+    PUSHBUTTON      "取消",IDCANCEL,228,181,36,14
+    GROUPBOX        "动作选项",IDC_STATIC,7,7,257,99
+    CONTROL         "自定义关键帧",IDC_CUSTOM_KEYFRAME,"Button",BS_AUTORADIOBUTTON,16,39,64,10
+    EDITTEXT        IDC_KEYFRAMES,97,60,167,14,ES_AUTOHSCROLL
+    LTEXT           "关键帧(用逗号分隔):",IDC_STATIC,17,63,73,8
+    LISTBOX         IDC_ACTIONLIST,7,113,257,57,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "添加",IDC_ADDACTION,7,181,32,14
+    PUSHBUTTON      "删除",IDC_REMOVEACTION,40,181,31,14
+    LTEXT           "动作命名:",IDC_STATIC,18,85,36,8
+    EDITTEXT        IDC_ACTIONNAME,61,82,203,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "修改",IDC_MODIFYACTION,72,181,32,14
+    PUSHBUTTON      "编辑属性..",IDC_ACTIONPROPS,104,181,47,14
+END
+
+IDD_SKELETALANIMATION_OPTIONS DIALOGEX 0, 0, 129, 106
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "骨骼动画导出选项"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,7,85,50,14
+    PUSHBUTTON      "取消",IDCANCEL,72,85,50,14
+    GROUPBOX        "",IDC_STATIC,6,3,116,71
+    CONTROL         "导出骨骼",IDC_EXPORT_SKELETON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,15,48,10
+    CONTROL         "导出Mesh",IDC_EXPORT_MESHES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,34,49,10
+    CONTROL         "导出动画",IDC_EXPORT_ANIMATIONS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,53,48,10
+END
+
+IDD_MATERIAL_OPTIONS DIALOGEX 0, 0, 171, 183
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "atom材质导出选项"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "导出",IDOK,87,162,38,14
+    PUSHBUTTON      "取消",IDCANCEL,127,162,37,14
+    GROUPBOX        "",IDC_STATIC,7,3,157,83
+    CONTROL         "双面材质",IDC_M_DOUBLESIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,115,38,48,10
+    LISTBOX         IDC_MATERIAL_LIST,7,107,157,46,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "请选择要导出的材质:",IDC_STATIC,10,95,76,8
+    CONTROL         "贴图存入共享目录",IDC_M_SHARETEXTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,38,80,10
+    PUSHBUTTON      "目录设定..",IDC_SETUPDIR,7,162,42,14
+    COMBOBOX        IDC_M_COLOROPT,61,15,98,113,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "顶点色类型:",IDC_STATIC,14,17,44,8
+END
+
+IDD_SKELETONVIEWER DIALOGEX 0, 0, 186, 274
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "骨骼查看"
+FONT 8, "宋体", 400, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,7,253,38,14
+    PUSHBUTTON      "取消",IDCANCEL,50,253,35,14
+    CONTROL         "",IDC_SKELETON_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_CHECKBOXES | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,26,172,222
+    LTEXT           "选择要导出的骨骼:",IDC_STATIC,11,10,68,8
+END
+
+IDD_QUERYNAME DIALOGEX 0, 0, 186, 49
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "输入名称"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,76,28,50,14
+    PUSHBUTTON      "取消",IDCANCEL,129,28,50,14
+    EDITTEXT        IDC_NAME,7,7,172,14,ES_AUTOHSCROLL
+END
+
+IDD_PROPEDIT DIALOGEX 0, 0, 260, 161
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "编辑自定义字段"
+FONT 9, "宋体", 400, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,7,140,50,14
+    CONTROL         "",IDC_PROPLIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_EDITLABELS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,24,246,110,WS_EX_CLIENTEDGE
+    LTEXT           "字段列表",IDC_STATIC,11,11,108,8
+    PUSHBUTTON      "取消",IDCANCEL,203,140,50,14
+END
+
+IDD_EDITSTRING DIALOGEX 0, 0, 186, 70
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "编辑属性"
+FONT 9, "宋体", 400, 0, 0x86
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,75,49,50,14
+    PUSHBUTTON      "取消",IDCANCEL,129,49,50,14
+    LTEXT           "请输入属性值:",IDC_STATIC,10,10,109,8
+    EDITTEXT        IDC_STRINGEDIT,7,22,172,14,ES_AUTOHSCROLL,WS_EX_CLIENTEDGE
+END
+
+IDD_MATERIALEDIT DIALOGEX 0, 0, 186, 177
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "编辑材质"
+FONT 9, "宋体", 400, 0, 0x86
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,78,156,50,14
+    PUSHBUTTON      "取消",IDCANCEL,129,156,50,14
+    LISTBOX         IDC_MATERIALLIST,7,24,172,121,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP,WS_EX_CLIENTEDGE
+    LTEXT           "材质列表:",IDC_STATIC,12,11,159,8
+    PUSHBUTTON      "设置属性..",IDC_MATERIALPROP,7,156,50,14
+END
+
+IDD_MESHEDIT DIALOGEX 0, 0, 186, 161
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "编辑网格"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,78,140,50,14
+    PUSHBUTTON      "取消",IDCANCEL,129,140,50,14
+    PUSHBUTTON      "设置属性..",IDC_MESHPROPS,7,140,50,14
+    LTEXT           "网格列表",IDC_STATIC,10,9,163,11
+    LISTBOX         IDC_MESHLIST,7,22,172,110,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP,WS_EX_CLIENTEDGE
+END
+
+IDD_SELECTPROP DIALOGEX 0, 0, 122, 182
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "选择属性类型"
+FONT 9, "宋体", 400, 0, 0x86
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,7,161,50,14
+    PUSHBUTTON      "取消",IDCANCEL,65,161,50,14
+    LISTBOX         IDC_DEFPROPLIST,7,7,108,147,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_KEYFRAME_OPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 264
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 195
+    END
+
+    IDD_SKELETALANIMATION_OPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 122
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 99
+    END
+
+    IDD_MATERIAL_OPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 164
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 176
+    END
+
+    IDD_SKELETONVIEWER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 267
+    END
+
+    IDD_QUERYNAME, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 42
+    END
+
+    IDD_PROPEDIT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 253
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 154
+    END
+
+    IDD_EDITSTRING, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 63
+    END
+
+    IDD_MATERIALEDIT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 170
+    END
+
+    IDD_MESHEDIT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 154
+    END
+
+    IDD_SELECTPROP, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 115
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 175
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU_BONELIST MENU 
+BEGIN
+    POPUP "Menu"
+    BEGIN
+        MENUITEM "选择全部",                        ID_MENU_SELECTALL
+        MENUITEM "清除全部",                        ID_MENU_DESELECTALL
+    END
+END
+
+IDR_PROPMENU MENU 
+BEGIN
+    POPUP "Prop"
+    BEGIN
+        POPUP "新建"
+        BEGIN
+            MENUITEM "整数字段",                        ID_INTPROP
+            MENUITEM "浮点数字段",                       ID_FLOATPROP
+            MENUITEM "颜色字段",                        ID_COLORPROP
+            MENUITEM "文件名字段",                       ID_FILENAMEPROP
+            MENUITEM "文件夹字段",                       ID_FOLDERPROP
+            MENUITEM "刀光出场",                        ID_LIGHTN_START
+            MENUITEM "刀光退场",                        ID_LIGHTN_END
+            MENUITEM "字符串字段",                       ID_STRINGPROP
+            POPUP "布尔字段"
+            BEGIN
+                MENUITEM "是",                           ID_BOOLPROP_YES
+                MENUITEM "否",                           ID_BOOLPROP_NO
+            END
+            POPUP "融合模式"
+            BEGIN
+                MENUITEM "叠加(1, 1)",                    ID_BLENDMODE_ADD
+                MENUITEM "透明叠加(As, 1)",                 ID_BLENDMODE_PARTICLE
+                MENUITEM "减暗(0, Cs)",                   ID_BLENDMODE_MODULATE
+                MENUITEM "减暗2(As, Cs)",                 ID_BLENDMODE_MODULATEB
+                MENUITEM "反相减暗(0, 1-Cs)",               ID_BLENDMODE_IMODULATE
+                MENUITEM "反相减暗2(As, 1-Cs)",             ID_BLENDMODE_IMODULATEB
+                MENUITEM "反相融合(1-As, As)",              ID_BLENDMODE_INORMAL
+            END
+            POPUP "材质风格"
+            BEGIN
+                MENUITEM "金属",                          ID_MATERIALSTYLE_METAL
+                MENUITEM "塑料",                          ID_MATERIALSTYLE_PLASTIC
+                MENUITEM "皮肤",                          ID_MATERIALSTYLE_SKIN
+            END
+            POPUP "光照模式"
+            BEGIN
+                MENUITEM "无光照",                         ID_NOLIGHTING
+            END
+            POPUP "Mipmap模式"
+            BEGIN
+                MENUITEM "无",                           ID_NOMIPMAP
+                MENUITEM "双线性",                         ID_BILINEARFILTER
+                MENUITEM "三线性",                         ID_TRILINEARFILTER
+            END
+            POPUP "允许自发光"
+            BEGIN
+                MENUITEM "允许",                          ID_USE_EMISSIVE
+                MENUITEM "不允许",                         ID_NO_EMISSIVE
+            END
+        END
+        POPUP "修改"
+        BEGIN
+            MENUITEM "整数字段",                        ID_M_INTPROP
+            MENUITEM "浮点数字段",                       ID_M_FLOATPROP
+            MENUITEM "颜色字段",                        ID_M_COLORPROP
+            MENUITEM "文件名字段",                       ID_M_FILENAMEPROP
+            MENUITEM "文件夹字段",                       ID_M_FOLDERPROP
+            MENUITEM "字符串字段",                       ID_M_STRINGPROP
+            MENUITEM "刀光出场",                        ID_M_LIGHTN_START
+            MENUITEM "刀光退场",                        ID_M_LIGHTN_END
+            POPUP "布尔字段"
+            BEGIN
+                MENUITEM "是",                           ID_M_BOOLPROP_YES
+                MENUITEM "否",                           ID_M_BOOLPROP_NO
+            END
+            POPUP "融合模式"
+            BEGIN
+                MENUITEM "叠加(1, 1)",                    ID_M_BLENDMODE_ADD
+                MENUITEM "透明叠加(As, 1)",                 ID_M_BLENDMODE_PARTICLE
+                MENUITEM "减暗(0, Cs)",                   ID_M_BLENDMODE_MODULATE
+                MENUITEM "减暗2(As, Cs)",                 ID_M_BLENDMODE_MODULATEB
+                MENUITEM "反相减暗(0, 1-Cs)",               ID_M_BLENDMODE_IMODULATE
+                MENUITEM "反相减暗2(As, 1-Cs)",             ID_M_BLENDMODE_IMODULATEB
+                MENUITEM "反相融合(1-As, As)",              ID_M_BLENDMODE_INORMAL
+            END
+            POPUP "材质风格"
+            BEGIN
+                MENUITEM "金属",                          ID_M_MATERIALSTYLE_METAL
+                MENUITEM "塑料",                          ID_M_MATERIALSTYLE_PLASTIC
+                MENUITEM "皮肤",                          ID_M_MATERIALSTYLE_SKIN
+            END
+            POPUP "光照模式"
+            BEGIN
+                MENUITEM "无光照",                         ID_M_NOLIGHTING
+            END
+            POPUP "Mipmap模式"
+            BEGIN
+                MENUITEM "无",                           ID_M_NOMIPMAP
+                MENUITEM "双线性",                         ID_M_BILINEARFILTER
+                MENUITEM "三线性",                         ID_M_TRILINEARFILTER
+            END
+        END
+        MENUITEM "删除",                          ID_PROP_DELETE
+        MENUITEM SEPARATOR
+        MENUITEM "选择属性..",                      ID_SELECTPROP
+    END
+END
+
+#endif    // 中文(中华人民共和国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 英语(美国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_LIBDESCRIPTION      "3DSMax exporter for atom engine"
+    IDS_CLASS_NAME          "maxexporter"
+    IDS_PARAMS              "Parameters"
+    IDS_SPIN                "Spin"
+END
+
+#endif    // 英语(美国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

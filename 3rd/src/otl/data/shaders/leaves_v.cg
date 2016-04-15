@@ -1,0 +1,34 @@
+struct app2vertex {
+	float4 Position : POSITION;
+	float3 Normal : NORMAL;
+	float2 TexCoord : TEXCOORD0;
+	float3 Tangent : TEXCOORD1;
+	float3 BiNormal : TEXCOORD2;
+};
+
+struct vertex2fragment { 
+	float4 Position : POSITION;
+	float2 TexCoord : TEXCOORD0;
+	float3 oLightDir : TEXCOORD1;
+	float3 oEyeVec : TEXCOORD2;
+	float4 Color : COLOR0;
+};
+
+vertex2fragment main (app2vertex IN,
+	uniform float4x4 ModelViewI,
+	uniform float4x4 ModelViewIT,
+	uniform float4x4 ModelViewProj,
+	uniform float4 lightcolor,
+	uniform float4 LightPos)
+{
+	vertex2fragment OUT; 
+	
+	OUT.Position = mul (ModelViewProj, IN.Position);
+	OUT.TexCoord = IN.TexCoord;
+	
+	float3 L = normalize(LightPos.xyz - IN.Position.xyz);
+	
+	OUT.oLightDir = max(dot(IN.Normal, L), 0);
+	
+	return OUT;
+}

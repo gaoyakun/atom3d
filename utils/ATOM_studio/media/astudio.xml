@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="gb2312" ?>
+<Config Version="100">
+    <UpdateServer Name="http://192.168.1.221/ATOM3D/update/" />
+</Config>

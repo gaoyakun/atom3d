@@ -1,0 +1,5 @@
+#ifndef __ATOM3D_ENGINE_CLOUD_H
+#define __ATOM3D_ENGINE_CLOUD_H
+
+
+#endif // __ATOM3D_ENGINE_CLOUD_H
