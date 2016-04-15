@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<material auto="1">
+	<effect name="default" scheme="forward" schemelayer="sky">
+		<pass>														
+			<streamdefine>											
+				<stream semantec="position"/>	
+				<stream semantec="color0" />
+			</streamdefine>											
+			<depth_state>											
+				<zfunc value="always" />							
+				<zwrite value="false" />							
+			</depth_state>											
+			<texturestage_state index="0">
+				<colorop value="replace" />
+				<colorarg1 value="diffuse" />
+			</texturestage_state>					
+		</pass>														
+	</effect>														
+</material>	

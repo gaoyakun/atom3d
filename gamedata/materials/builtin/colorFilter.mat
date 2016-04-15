@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	
+	<param name="filterColorParams" type="float4" default="0.004, 0.6, 0.9, 1.0" editortype="color" />
+	
+	<param name="maskTexture" type="texture"/>
+	<param name="maskSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$maskTexture"/>
+	</param>
+	
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$inputTexture"/>
+	</param>
+	
+	<code><![CDATA[
+				
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 HPosition    : POSITION;
+			float2 baseTC       : TEXCOORD0;
+		};
+		
+		VS_OUTPUT vs (in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			
+			OUT.HPosition = mul(float4(IN.position, 1.0), MVP);
+			
+			OUT.baseTC = IN.tex0;
+						
+			return OUT;
+		}
+			
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+	
+			float4 result 	= tex2D( inputSampler, IN.baseTC.xy );
+	#if 0
+			float3 v = dot( result.rgb, float3(0.3, 0.59, 0.11) ) * filterColorParams.xyz * filterColorParams.w;
+			v = max( v, result.rgb );
+			result.rgb = filterColorParams.xyz > 0 ? v : result.rgb;
+	#else
+			float4 mask = tex2D( maskSampler , IN.baseTC.xy );
+			result.rgb = lerp( result.rgb, filterColorParams.rgb * mask.rgb, filterColorParams.w * mask.a );
+	#endif
+			return result;
+		}
+		
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

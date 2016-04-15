@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="gb2312" ?>
+<UI version="1">
+    <component type="dialog" name="dialog1" rect="328,129,217,228" id="100" imageid="1" style="3" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="vertical" layout_gap="4" layout_spc="4,15,4,4" fontcolor="-1" outlinecolor="-939524096">
+        <component type="spacer" name="spacer1" rect="-16,-42,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+            <component type="label" name="lblX" rect="-27,5,-100,-100" id="110" imageid="-1" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+        <component type="spacer" name="spacer2" rect="-16,-42,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+            <component type="label" name="lblY" rect="49,-2,-100,-100" id="101" imageid="-1" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+        <component type="spacer" name="spacer3" rect="-16,-42,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+            <component type="label" name="lblW" rect="19,7,-100,-100" id="102" imageid="-1" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+        <component type="spacer" name="spacer4" rect="-16,-42,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+            <component type="label" name="lblH" rect="30,8,-100,-100" id="103" imageid="-1" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+        <component type="spacer" name="spacer5" rect="-16,-42,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+            <component type="spacer" name="spacer6" rect="-63,-65,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" />
+            <component type="button" name="btnOk" rect="141,9,60,24" id="104" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="关闭" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="spacer" name="spacer7" rect="37,-63,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" />
+        </component>
+    </component>
+</UI>

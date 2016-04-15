@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="silInvScreenSize" type="float4"/>
+	<param name="silcolor" type="float4"/>
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$inputTexture"/>
+	</param>
+	
+	<code><![CDATA[
+				
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 HPosition    : POSITION;
+			float2 baseTC       : TEXCOORD0;
+			float4 offsetTC0	: TEXCOORD1;
+			float4 offsetTC1	: TEXCOORD2;
+		};
+		
+		VS_OUTPUT vs (in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			
+			OUT.HPosition = mul(float4(IN.position, 1.0), MVP);
+			
+			OUT.baseTC = IN.tex0;
+			
+			OUT.offsetTC0.xy = IN.tex0 + silInvScreenSize * float2(1,0) ;
+			OUT.offsetTC0.zw = IN.tex0 + silInvScreenSize * float2(-1,0) ;
+			OUT.offsetTC1.xy = IN.tex0 + silInvScreenSize * float2(0,1) ;
+			OUT.offsetTC1.zw = IN.tex0 + silInvScreenSize * float2(0,-1) ;
+			
+			return OUT;
+		}
+		
+		float getEdgeFlag( in float2 screenCoord )
+		{
+			return tex2D(Gbuffer_NormalSampler, screenCoord).w * 2 - 1;
+		}
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float2 screenCoord = IN.baseTC.xy;
+			
+			float4 input = tex2D( inputSampler, screenCoord );
+			
+			float4 lambert_center = getEdgeFlag(screenCoord);
+			
+			float4 depth_center = getDepth(screenCoord);
+		
+			float depth_linear = linearizeDepth(depth_center.x);
+			float depth_fixel_kernel = ( 1 - smoothstep( 0.01, 500, depth_linear ) ) * 5;
+			float4 offset_tc0 = ( IN.offsetTC0 - screenCoord.xyxy ) * depth_fixel_kernel + screenCoord.xyxy;
+			float4 offset_tc1 = ( IN.offsetTC1 - screenCoord.xyxy ) * depth_fixel_kernel + screenCoord.xyxy;
+			
+			float4 lamberts;
+			lamberts.x = getEdgeFlag ( offset_tc0.xy );
+			lamberts.y = getEdgeFlag ( offset_tc0.zw );
+			lamberts.z = getEdgeFlag ( offset_tc1.xy );
+			lamberts.w = getEdgeFlag ( offset_tc1.zw );
+			
+			float4 depths;
+			depths.x = getDepth ( offset_tc0.xy );
+			depths.y = getDepth ( offset_tc0.zw );
+			depths.z = getDepth ( offset_tc1.xy );
+			depths.w = getDepth ( offset_tc1.zw );
+			depths = depth_center < depths ? 1 : 0;
+						
+			float4  bMinus 	= lambert_center < 0 ? 1 : 0;
+			float4 	bDiff 	= lambert_center * lamberts < 0 ? 1 : 0;
+			float4 	bEdge 	= bMinus * bDiff * depths;
+			float   edge 	= max( bEdge.x,max( bEdge.y, max( bEdge.z,bEdge.w ) ) );
+			
+			float3 color = edge > 0 ? silcolor.rgb : input.rgb;
+										
+			return float4( color.rgb, input.a);
+		}
+		
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

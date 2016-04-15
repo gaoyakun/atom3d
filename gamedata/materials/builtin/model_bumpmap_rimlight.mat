@@ -1,0 +1,2159 @@
+<?xml version="1.0"?>
+<material auto="1">
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	
+	<include filename="/materials/builtin/model_default_defines.inc" />
+	<include filename="/materials/builtin/model_bumpmap_defines.inc" />
+	<include filename="/materials/builtin/model_rimlight.inc" />
+	
+    <include filename="/materials/builtin/skinning.inc" />
+	<include filename="/materials/builtin/model_structs.inc" />
+	<include filename="/materials/builtin/shadingUtils.inc" />
+	
+    <include filename="/materials/builtin/model_default_params.inc" />
+	<include filename="/materials/builtin/model_vertexshaders.inc" />
+	<include filename="/materials/builtin/model_pixelshaders.inc" />
+	
+	<include filename="/materials/builtin/model_custom_forward.inc" />		<!-- forward rendering -->
+	
+	<code>
+    <![CDATA[
+		    
+    ]]>
+	</code>
+	
+	<effect name="noAlphaBlend_noAlphaTest_ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="back" />
+            </rasterizer_state>
+			<colorwrite_state>
+        <red value="false"/>
+        <green value="false"/>
+        <blue value="false"/>
+        <alpha value="false"/>
+      </colorwrite_state>
+            <vertexshader entry="vs_shadowmap" target="vs_2_0" />
+            <pixelshader entry="ps_shadowmap" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="back" />
+            </rasterizer_state>
+			<colorwrite_state>
+				<red value="false"/>
+				<green value="false"/>
+				<blue value="false"/>
+				<alpha value="false"/>
+			</colorwrite_state>
+            <vertexshader entry="vs_shadowmap" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_shadowmap" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_noAlphaTest_skinning_ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="back" />
+            </rasterizer_state>
+			<colorwrite_state>
+        <red value="false"/>
+        <green value="false"/>
+        <blue value="false"/>
+        <alpha value="false"/>
+      </colorwrite_state>
+            <vertexshader entry="vs_skinning_shadowmap" target="vs_2_0" />
+            <pixelshader entry="ps_shadowmap" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_skinning_ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="back" />
+            </rasterizer_state>
+			<colorwrite_state>
+        <red value="false"/>
+        <green value="false"/>
+        <blue value="false"/>
+        <alpha value="false"/>
+      </colorwrite_state>
+            <vertexshader entry="vs_skinning_shadowmap" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_shadowmap" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="GbufferConstruction">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0" />
+		  <eq param="enableAlphaTest" value="0"/>
+		  <eq param="hasVertexColor" value="0"/>
+			<ne param="hasDiffuseTexture" value="0" />
+		  <eq param="enableSkinning" value="0"/>
+		  <eq param="projectable" value="0" />
+		</requirements>
+		<pass>
+		  <streamdefine>
+			<stream semantec="position"/>
+			<stream semantec="normal"/>
+			<stream semantec="texcoord0" type="float2"/>
+		  </streamdefine>
+		  <rasterizer_state>
+			<cullmode value="$cullmode"/>
+		  </rasterizer_state>
+		  <vertexshader entry="vs_nodiffuse" target="vs_2_0"/>
+		  <pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_skinning" scheme="deferred" schemelayer="GbufferConstruction">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0" />
+		  <eq param="enableAlphaTest" value="0"/>
+		  <eq param="hasVertexColor" value="0"/>
+			<ne param="hasDiffuseTexture" value="0" />
+		  <ne param="enableSkinning" value="0"/>
+		  <eq param="projectable" value="0" />
+		</requirements>
+		<pass>
+		  <streamdefine>
+			<stream semantec="position"/>
+			<stream semantec="normal"/>
+			<stream semantec="texcoord0" type="float2"/>
+			<stream semantec="texcoord1" type="float4"/>
+			<stream semantec="texcoord2" type="float4"/>
+		  </streamdefine>
+		  <rasterizer_state>
+			<cullmode value="$cullmode"/>
+		  </rasterizer_state>
+		  <vertexshader entry="vs_nodiffuse_skinning" target="vs_2_0"/>
+		  <pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="GbufferConstruction">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0" />
+		  <ne param="enableAlphaTest" value="0"/>
+		  <eq param="hasVertexColor" value="0"/>
+		  <ne param="hasDiffuseTexture" value="0"/>
+		  <eq param="enableSkinning" value="0"/>
+		  <eq param="projectable" value="0" />
+		</requirements>
+		<pass>
+		  <streamdefine>
+			<stream semantec="position"/>
+			<stream semantec="normal"/>
+			<stream semantec="texcoord0" type="float2"/>
+		  </streamdefine>
+		  <rasterizer_state>
+			<cullmode value="$cullmode"/>
+		  </rasterizer_state>
+		  <vertexshader entry="vs_nodiffuse" target="vs_2_0"/>
+		  <pixelshader entry="ps_alphatest" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_skinning" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+            <ne param="hasDiffuseTexture" value="0" />
+      <ne param="enableSkinning" value="0"/>
+	  <eq param="projectable" value="0" />
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse_skinning" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest" target="ps_2_0" />
+    </pass>
+	</effect>
+
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_Projectable" scheme="deferred" schemelayer="GbufferConstruction">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse" target="vs_2_0" />
+            <pixelshader entry="ps" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_Projectable" scheme="deferred" schemelayer="GbufferConstruction">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_skinning_Projectable" scheme="deferred" schemelayer="GbufferConstruction">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_skinning" target="vs_2_0" />
+            <pixelshader entry="ps" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_skinning_Projectable" scheme="deferred" schemelayer="GbufferConstruction">
+        <requirements>
+			<eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_skinning" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<effect name="PostZPass" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+            <ne param="enablePostZPass" value="0" />
+        </requirements>
+		<pass>
+	    <streamdefine>
+			<stream semantec="position"/>
+	    </streamdefine>
+	    <colorwrite_state>
+			<red value="false"/>
+			<green value="false"/>
+			<blue value="false"/>
+			<alpha value="false"/>
+	    </colorwrite_state>
+	    <vertexshader entry="vs_postzpass" target="vs_2_0"/>
+	    <pixelshader entry="ps_postzpass" target="ps_2_0" />
+		</pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_sssss" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+			<eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_sssss" target="vs_3_0" />
+            <pixelshader entry="ps_sssss" target="ps_3_0" />
+        </pass>
+    </effect>
+	
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_skinning_sssss" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+			<eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_sssss_skinning" target="vs_3_0" />
+            <pixelshader entry="ps_sssss" target="ps_3_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_sssss" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+			<eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+				<stream semantec="normal" />
+				<stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_sssss" target="vs_3_0" />
+            <pixelshader entry="ps_alphatest_sssss" target="ps_3_0" />
+        </pass>
+    </effect>
+	
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_sssss_skinning" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+			<eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+				<stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_sssss_skinning" target="vs_3_0" />
+            <pixelshader entry="ps_alphatest_sssss" target="ps_3_0" />
+        </pass>
+    </effect>
+	
+	<!-- environment lighting -->
+	
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_environment" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="envLighting" value="0" />
+			<eq param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_env" target="vs_2_0" />
+            <pixelshader entry="ps_environment" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_skinning_environment" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="envLighting" value="0" />
+			<eq param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_env_skinning" target="vs_2_0" />
+            <pixelshader entry="ps_environment" target="ps_2_0" />
+        </pass>
+    </effect>
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_environment" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="envLighting" value="0" />
+			<eq param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+				<stream semantec="normal" />
+				<stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_env" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_environment" target="ps_2_0" />
+        </pass>
+    </effect>
+	<effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_skinning_environment" scheme="deferred" schemelayer="PostShading">
+        <requirements>
+			<ne param="envLighting" value="0" />
+			<eq param="sssss" value="0" />
+			<eq param="enablePostZPass" value="0" />
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+				<stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+			<depth_state>
+                <zfunc value="equal" />
+                <zwrite value="false" />
+            </depth_state>
+            <vertexshader entry="vs_nodiffuse_env_skinning" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_environment" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	<!-- AlphaBlend forward -->
+	
+	<effect name="AlphaBlend_noAlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="forward">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse" target="vs_2_0" />
+            <pixelshader entry="ps_blend" target="ps_2_0" />
+        </pass>
+    </effect>
+	<effect name="AlphaBlend_noAlphaTest_noDiffuse_Texture_skinning" scheme="deferred" schemelayer="forward">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_skinning" target="vs_2_0" />
+            <pixelshader entry="ps_blend" target="ps_2_0" />
+        </pass>
+    </effect>
+	<effect name="AlphaBlend_AlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="forward">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse" target="vs_2_0" />
+            <pixelshader entry="ps_blend_alphatest" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_noDiffuse_Texture_skinning" scheme="deferred" schemelayer="forward">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_skinning" target="vs_2_0" />
+            <pixelshader entry="ps_blend_alphatest" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+	
+	
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_noTexture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_noTexture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_noTexture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_noTexture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_noTexture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_noTexture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_Texture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_Texture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_Texture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_noAlphaTest_Diffuse_Texture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_noTexture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_noTexture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_noTexture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_nodiffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_noTexture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_noTexture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_noTexture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+			<ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_Texture_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+			<eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_Texture_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+	    <ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_Texture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+	    <eq param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="noAlphaBlend_AlphaTest_Diffuse_Texture_skinning_Projectable_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <eq param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+	    <ne param="projectable" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="normal" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>	
+	    <stencil_state>
+                <enable value="true"/>
+		<twosided value="true"/>
+                <readmask value="128"/>
+                <writemask value="128"/>
+                <ref value="128"/>
+                <func_front value="always"/>
+                <failop_front value="keep"/>
+                <zfailop_front value="keep"/>
+                <passop_front value="replace"/>
+                <func_back value="always"/>
+                <failop_back value="keep"/>
+                <zfailop_back value="keep"/>
+                <passop_back value="replace"/>
+            </stencil_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_diffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_noDiffuse_noTexture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_noDiffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Solid">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_noDiffuse_Texture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_noDiffuse_Texture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_Diffuse_noTexture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_Diffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_Diffuse_Texture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_noAlphaTest_Diffuse_Texture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <eq param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_noDiffuse_noTexture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_noDiffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_noDiffuse_Texture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_noDiffuse_Texture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <eq param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_nodiffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_Diffuse_noTexture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_notex_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_Diffuse_noTexture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <eq param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_notex_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_notex_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_Diffuse_Texture_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <eq param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+    <effect name="AlphaBlend_AlphaTest_Diffuse_Texture_skinning_fs" scheme="custom" schemelayer="Transparent">
+        <requirements>
+            <ne param="enableAlphaBlend" value="0" />
+            <ne param="enableAlphaTest" value="0" />
+            <ne param="hasVertexColor" value="0" />
+            <ne param="hasDiffuseTexture" value="0" />
+            <ne param="enableSkinning" value="0" />
+        </requirements>
+        <pass>
+            <streamdefine>
+                <stream semantec="position" />
+                <stream semantec="color0" />
+                <stream semantec="texcoord0" type="float2" />
+            </streamdefine>
+            <alphablend_state>
+                <enable value="true" />
+                <srcblend value="$srcBlend" />
+                <destblend value="$destBlend" />
+            </alphablend_state>
+            <depth_state>
+                <zfunc value="lessequal" />
+                <zwrite value="false" />
+            </depth_state>
+            <rasterizer_state>
+                <cullmode value="$cullmode" />
+            </rasterizer_state>
+            <vertexshader entry="vs_blend_diffuse_skinning_fs" target="vs_2_0" />
+            <pixelshader entry="ps_blend_alphatest_fs" target="ps_2_0" />
+        </pass>
+    </effect>
+	
+</material>
+

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<material auto="1">										
+	<param name="texture" type="texture" editortype="none" />
+	<param name="srcBlend" type="int" editortype="e_blendfunc" />
+	<param name="destBlend" type="int" editortype="e_blendfunc" />
+	<param name="diffuseSampler" type="sampler2D">
+		<filter value="llp" />
+		<addressu value="clamp" />
+		<addressv value="clamp" />
+		<texture value="$texture" />
+	</param>
+	<code><![CDATA[
+		struct v2p
+		{
+			float4 position : POSITION0;
+			float4 diffuse : COLOR0;
+			float2 tex : TEXCOORD0;
+		};
+		float4 ps (in v2p IN) : COLOR0
+		{
+			return tex2D(diffuseSampler, IN.tex) * IN.diffuse;
+		}
+	]]></code>						
+	<effect name="default" scheme="deferred" schemelayer="forward">										
+		<pass>														
+			<streamdefine>											
+				<stream semantec="position"/>	
+				<stream semantec="color0" />
+				<stream semantec="texcoord0" type="float2" />
+			</streamdefine>											
+			<alphablend_state>										
+				<enable value="true" />							
+				<srcblend value="$srcBlend" />						
+				<destblend value="$destBlend" />					
+			</alphablend_state>										
+			<depth_state>											
+				<zwrite value="false" />							
+			</depth_state>											
+			<rasterizer_state>										
+				<cullmode value="none" />					
+			</rasterizer_state>			
+			<pixelshader entry="ps" target="ps_2_0" />		
+		</pass>														
+	</effect>														
+</material>

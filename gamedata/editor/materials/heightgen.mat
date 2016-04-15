@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<param name="OrthoParam" type="float4"/>
+	<param name="NearFar" type="float4"/>
+	<param name="ViewToWorld" type="float4x4"/>
+	<param name="uvCoordScaleBias" type="float4" default="$Deferred_ScreenCoordScaleBias"/>
+	<param name="depthTexture" type="texture"/>
+	<param name="depthSampler" type="sampler2D" >
+		<filter value="ppp"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$depthTexture"/>
+	</param>
+	<code>
+          <![CDATA[
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 uv : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 position : POSITION;
+			float2 uv : TEXCOORD0;
+			float2 eyeSpaceXY : TEXCOORD1;
+			
+		};
+		struct PS_OUTPUT
+		{
+			float4 color : COLOR0;
+		};
+		VS_OUTPUT vs(in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			OUT.position = float4(IN.position, 1.0);
+			OUT.uv = IN.uv;
+			OUT.eyeSpaceXY = lerp(OrthoParam.xy, OrthoParam.zw, OUT.position.xy * 0.5 + float2(0.5, 0.5));
+			return OUT;
+		}
+		PS_OUTPUT ps (in VS_OUTPUT IN)
+		{
+			PS_OUTPUT OUT;
+			float2 uv = IN.uv;
+			uv = uv * uvCoordScaleBias.xy + uvCoordScaleBias.zw;
+			float depth = tex2D(depthSampler, uv).r;
+			float z = lerp(NearFar.x, NearFar.y, depth);
+			OUT.color = mul(float4(IN.eyeSpaceXY.x, IN.eyeSpaceXY.y, z, 1.0), ViewToWorld);
+			return OUT;
+		}
+	]]></code>
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

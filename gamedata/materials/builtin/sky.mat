@@ -1,0 +1,629 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	
+	<param name="mC2W" type="float4x4" />
+	<param name="mW2C" type="float4x4" />
+	<param name="vPix" type="float2" />
+	<param name="vOff" type="float4"/>
+	<param name="vParam" type="float3"/>
+	<param name="vFalloff" type="float4"/>
+	<param name="invMax" type="float2"/>
+	<param name="vEye" type="float3"/>
+	<param name="CameraPos" type="float3"/>
+	<param name="fExposure" type="float"/>
+	<param name="cameraNearFarFactor" type="float4"/>
+	
+	<param name="mWorld" type="float4x4" />
+	<param name="mMVP" type="float4x4" />
+	
+	<param name="densityTexture" type="texture"/>
+	<param name="sDensity" type="sampler2D">
+    <filter value="llp" />
+    <addressu value="clamp" />
+    <addressv value="clamp" />
+    <texture value="$densityTexture" />
+	</param>
+	
+	<param name="cloudTexture" type="texture"/>
+	<param name="sCloud" type="sampler2D">
+    <filter value="llp" />
+    <addressu value="wrap" />
+    <addressv value="wrap" />
+    <texture value="$cloudTexture" />
+	</param>
+	
+	<param name="blurredTexture" type="texture"/>
+	<param name="sLit" type="sampler2D">
+    <filter value="llp" />
+    <addressu value="clamp" />
+    <addressv value="clamp" />
+    <texture value="$blurredTexture"/>
+	</param>
+	
+	<param name="vXZParam" type="float4"/>
+	<param name="vHeight" type="float2"/>
+	<param name="vUVParam" type="float4"/>
+	<param name="fCloudCover" type="float"/>
+	<param name="litDir" type="float3"/>
+	<param name="litDirView" type="float3"/>
+	<param name="scat" type="float4[5]"/>
+	<param name="vDistance" type="float2"/>
+	<param name="cLit" type="float3"/>
+	<param name="cAmb" type="float3"/>
+	
+	<param name="fogDensity" type="float"/>
+	<param name="fogColor" type="float4" default="1.0, 1.0, 1.0, 1.0" editortype="color" />
+	
+	<param name="skyTexture" type="texture"/>
+	<param name="skyboxSampler" type="samplerCUBE">
+		<filter value="lln"/>
+		<texture value="$skyTexture"/>
+		<srgb value="true" />
+	</param>
+	<param name="skyDomeSampler" type="sampler2D">
+		<filter value="lln"/>
+		<texture value="$skyTexture"/>
+		<srgb value="true" />
+	</param>
+	
+	<code>
+          <![CDATA[
+        #define FILTER_WIDTH 16
+        struct BlurVSInput
+        {
+          float4 vPosC : POSITION0;
+          float2 vTex : TEXCOORD0;
+        };
+        struct BlurVSOutput
+        {
+          float4 vPos : POSITION0;
+          float4 vWorldPos : TEXCOORD0;
+          float4 vTex : TEXCOORD1;
+        };
+        void mainVS_Blur (out BlurVSOutput _Output, in BlurVSInput _Input)
+        {
+          _Output.vPos = float4(_Input.vPosC.xy, 0.5f, 1);
+          _Output.vWorldPos = mul(_Input.vPosC, mC2W);
+          _Output.vTex.xy = _Input.vTex + vPix;
+          _Output.vTex.zw = _Input.vTex * vOff.xy + vOff.zw;
+        }
+        float4 mainPS_Blur (in BlurVSOutput _Input) : COLOR0
+        {
+	        // compute ray direction 
+	        float3 _vWorldPos = _Input.vWorldPos.xyz/_Input.vWorldPos.w;
+	        float3 _vRay = _vWorldPos - vEye;	
+	        float _fSqDistance = dot( _vRay, _vRay );
+	        _vRay = normalize( _vRay );
+
+	        // compute distance the light passes through the atmosphere.	
+	        float _fSin = _vRay.y;
+	        float _fRSin = vParam.x * _fSin;
+	        float _fDistance = sqrt( _fRSin * _fRSin + vParam.y ) - _fRSin;
+
+	        // Compute UV offset.
+	        float2 _vUVOffset = _Input.vTex.zw / FILTER_WIDTH * (vParam.z / _fDistance);
+
+	        // limit blur vector
+	        float2 _len = abs( _vUVOffset * invMax );
+	        float _over = max( _len.x, _len.y );
+	        float _scale = _over > 1.0f ? 1.0f/_over : 1.0f;
+	        _vUVOffset.xy *= _scale;
+
+	        // scale parameter of exponential weight
+	        float4 _distance;
+	        _distance = dot( _vUVOffset.xy, _vUVOffset.xy );
+	        _distance *= vFalloff;
+
+	        // blur 
+	        float2 _uv = _Input.vTex.xy;
+	        float4 _clOut = tex2D( sDensity, _uv );
+	        float4 _fWeightSum = 1.0f;
+	        for ( int i = 1; i < FILTER_WIDTH; ++i ) {
+		        float4 _weight = exp( _distance * i );
+		        _fWeightSum += _weight;
+        		
+		        float2 _vMove = _vUVOffset * i;		
+		        float4 _clDensity = tex2D( sDensity, _uv + _vMove );
+		        _clOut += _weight * _clDensity;
+	        }
+	        _clOut /= _fWeightSum;
+	        return _clOut;
+        }
+        struct GridVSInput
+        {
+          float4 vPos : POSITION0;
+        };
+        struct GridVSOutput
+        {
+          float4 vPos : POSITION;
+          float2 vTex : TEXCOORD0;
+        };
+        void mainVS_Grid (out GridVSOutput _Output, in GridVSInput _Input)
+        {
+	        // compute world position
+	        float4 vWorldPos;
+	        vWorldPos.xz = _Input.vPos.xy * vXZParam.xy + vXZParam.zw;
+	        // height is propotional to the square distance in horizontal direction.
+	        float2 vDir = vEye.xz - vWorldPos.xz;
+	        float fSqDistance = dot( vDir, vDir );
+	        vWorldPos.y = fSqDistance * vHeight.x + vHeight.y;
+	        vWorldPos.w = 1.0f;
+        	
+	        // transform and projection
+	        _Output.vPos = mul( vWorldPos, mW2C);
+        	
+	        // texture coordinate 
+	        _Output.vTex = _Input.vPos.zw * vUVParam.xy + vUVParam.zw;
+        }
+        float4 mainPS_Grid (in GridVSOutput _Input) : COLOR0
+        {
+	        float4 clTex = tex2D( sCloud, _Input.vTex );
+        	
+	        // blend 4 channel of the cloud texture according to cloud cover 
+	        float4 vDensity;
+	        vDensity = abs( fCloudCover - float4( 0.25f, 0.5f, 0.75f, 1.0f ) ) / 0.25f;
+	        vDensity = saturate( 1.0f - vDensity );
+	        float _fDensity = dot( clTex, vDensity );
+	        return _fDensity;
+        }
+        struct CloudPlaneVSInput
+        {
+          float4 vPosC : POSITION0;
+          float2 vTex : TEXCOORD0;
+        };
+        struct CloudPlaneVSOutput
+        {
+          float4 vWorldPos : TEXCOORD0;
+          float2 vTex : TEXCOORD2;
+          float4 vPos : POSITION0;
+        };
+        void mainVS_CloudPlane (out CloudPlaneVSOutput _Output, in CloudPlaneVSInput _Input)
+        {
+	        // Output projection position
+	        _Output.vPos = _Input.vPosC;
+        	
+	        // world positon
+	        _Output.vWorldPos = mul( _Input.vPosC, mC2W );
+
+	        // uv 
+	        _Output.vTex = _Input.vTex;
+        }
+        float3 ApplyScattering( float3 _clInput, float3 _vRay )
+        {
+	        // calcurating in-scattering 	
+	        float _fVL = dot( litDir, -_vRay );
+	        float fG = scat[1].w + scat[0].w * _fVL;
+	        fG = rsqrt( fG );
+	        fG = fG*fG*fG;
+	        float3 _vMie = scat[1].rgb * fG;
+	        float3 _vRayleigh = scat[0].rgb*(1.0f + _fVL*_fVL);
+	        float3 _vInscattering = scat[2] * (_vMie + _vRayleigh) + scat[4].rgb;
+        	
+	        // compute distance to the cloud
+	        float _fSin = _vRay.y;
+	        float _fRSin = vDistance.x * _fSin;
+	        float _fDistance = sqrt( _fRSin * _fRSin + vDistance.y ) - _fRSin;
+        			
+	        float3 fRatio = exp( -scat[3].rgb * _fDistance );		
+	        return lerp( _vInscattering, _clInput, fRatio );
+        }
+        float4 mainPS_CloudPlane (in CloudPlaneVSOutput _Input) : COLOR0
+        {
+	        float4 _clDensity = tex2D( sDensity, _Input.vTex.xy );
+	        float4 _clLit     = 1.0f - tex2D( sLit, _Input.vTex.xy );
+
+	        // light cloud
+	        float3 _clCloud = cAmb + cLit * _clLit.r;
+        	
+	        // compute ray direction	
+	        float3 _vWorldPos = _Input.vWorldPos.xyz/_Input.vWorldPos.w;
+	        float3 _vRay = _vWorldPos - vEye;	
+	        float _fSqDistance = dot( _vRay, _vRay );
+	        _vRay = normalize( _vRay );
+        		
+	        // apply scattering 
+	        float4 _color;
+	        _color.rgb = ApplyScattering( _clCloud, _vRay );
+	        _color.rgb = _color.rgb * fExposure;
+	        _color.a = _clDensity.a;
+
+	        return _color;
+        }
+        struct SkyPlaneVSInput
+        {
+          float4 vPosC : POSITION0;
+        };
+        struct SkyPlaneVSOutput
+        {
+          float4 vWorldPos : TEXCOORD0;
+          float4 vPos : POSITION0;
+        };
+        void mainVS_SkyPlane (out SkyPlaneVSOutput _Output, in SkyPlaneVSInput _Input)
+        {
+	        _Output.vPos = _Input.vPosC;
+	        _Output.vWorldPos = mul( _Input.vPosC, mC2W );
+        }
+        float4 mainPS_SkyPlane(in SkyPlaneVSOutput _Input) : COLOR0
+        {
+	        // ray direction 
+	        float3 _vWorldPos = _Input.vWorldPos.xyz/_Input.vWorldPos.w;
+	        float3 _vRay = _vWorldPos - vEye;	
+	        float _fSqDistance = dot( _vRay, _vRay );
+	        _vRay = normalize( _vRay );
+
+	        // calcurating in-scattering 	
+	        float _fVL = dot( litDir, -_vRay );
+	        float fG = scat[1].w + scat[0].w * _fVL;
+	        fG = rsqrt( fG );
+	        fG = fG*fG*fG;
+	        float3 _vMie = scat[1].rgb * fG;
+	        float3 _vRayleigh = scat[0].rgb*(1.0f + _fVL*_fVL);
+	        float3 _vInscattering = scat[2] * (_vMie + _vRayleigh) + scat[4].rgb;
+        	
+	        // compute distance the light passes through the atmosphere
+	        float _fSin = _vRay.y;
+	        float _fRSin = scat[2].w * _fSin;
+	        float _fDistance = sqrt( _fRSin * _fRSin + scat[3].w ) - _fRSin;
+        	
+	        float3 fRatio = exp( -scat[3].rgb * _fDistance );	
+	        float4 _color;
+	        _color.rgb = (1.0f-fRatio) *_vInscattering * fExposure;
+	        _color.a = 1.0f;
+
+	        return _color;
+        }
+        struct FogVSInput
+        {
+          float3 pos : POSITION;
+          float2 t0 : TEXCOORD0;
+        };
+        struct FogVSOutput
+        {
+          float4 pos : POSITION;
+          float2 t0 : TEXCOORD0;
+          float3 t1 : TEXCOORD1;
+        };
+        FogVSOutput mainVS_Fog(FogVSInput _Input)
+        {
+          FogVSOutput _Output;
+          _Output.t0 = _Input.t0;
+          _Output.t1 = getEyeDirFromTexCoord (_Input.t0);
+          _Output.pos = float4(_Input.pos, 1.0);
+          return _Output;
+        }
+        float4 mainPS_Fog(FogVSOutput _Input) : COLOR0
+        {			
+			float depth = getDepth (_Input.t0);
+			float depth_linear = linearizeDepth (depth);
+						
+            float3 eyePos = _Input.t1 * depth_linear / _Input.t1.z;
+          
+			//--- wangjian modified ---//
+			// change to linear fog
+			//float factor = exp(-dot(eyePos, eyePos) * fogDensity);
+			depth_linear = depth_linear > ( cameraNearFarFactor.w - 1.0f ) ? cameraNearFarFactor.z : depth_linear;
+			float factor = saturate( 1.0f - ( depth_linear - cameraNearFarFactor.x ) * cameraNearFarFactor.y );
+			//-------------------------//
+		  
+			float dist = sqrt(dot(eyePos, eyePos));
+			eyePos /= dist;
+			float _fVL = dot(litDirView, -eyePos);
+			float fG = scat[1].w + scat[0].w * _fVL;
+			fG = rsqrt(fG);
+			fG = fG * fG * fG;
+			float3 _vMie = scat[1].rgb * fG;
+			float3 _vRayleigh = scat[0].rgb * (1.0f + _fVL * _fVL);
+			float3 _vInscattering = scat[2] * (_vMie + _vRayleigh) + scat[4].rgb;
+          
+			return float4(_vInscattering * fExposure, 1.0f - factor);
+        }
+		
+		////////////////////////////////////// sky box /////////////////////////////////////////////////
+		
+		struct SkyBoxVSInput
+        {
+			float4 vPosC : POSITION0;
+        };
+        struct SkyBoxVSOutput
+        {
+			float4 vPos : POSITION0;
+			float4 vWorldPos : TEXCOORD0;
+        };
+        void mainVS_SkyBox (out SkyBoxVSOutput _Output, in SkyBoxVSInput _Input)
+        {
+	        _Output.vPos = _Input.vPosC;
+	        _Output.vWorldPos = mul( _Input.vPosC, mC2W );
+        }
+        float4 mainPS_SkyBox(SkyBoxVSOutput _Input) : COLOR0
+        {
+		  /*
+		  float3 eyePos = getEyePosFromTexCoord (_Input.t0, _Input.t1);
+		  //--- wangjian modified ---//
+		  // change to linear fog
+		  //float factor = exp(-dot(eyePos, eyePos) * fogDensity);
+		  float factor = saturate( 1.0f - ( eyePos.z - cameraNearFarFactor.x ) * cameraNearFarFactor.y );
+		  //-------------------------//
+		  
+		  float dist = sqrt(dot(eyePos, eyePos));
+          eyePos /= dist;
+          float _fVL = dot(litDirView, -eyePos);
+          float fG = scat[1].w + scat[0].w * _fVL;
+          fG = rsqrt(fG);
+          fG = fG * fG * fG;
+          float3 _vMie = scat[1].rgb * fG;
+          float3 _vRayleigh = scat[0].rgb * (1.0f + _fVL * _fVL);
+          float3 _vInscattering = scat[2] * (_vMie + _vRayleigh) + scat[4].rgb;
+		  */
+          
+          return float4( texCUBE(skyboxSampler,_Input.vWorldPos.xyz).rgb, 1.0 );
+        }
+		
+		////////////////////////////////////// sky dome /////////////////////////////////////////////////
+		
+		struct SkyDomeVSInput
+        {
+			float4 position : POSITION0;
+			float2 texcoord	 : TEXCOORD0;
+        };
+        struct SkyDomeVSOutput
+        {
+			float4 HPosition : POSITION0;
+			float2 texcoord	 : TEXCOORD0;
+			//float4 vWorldPos : TEXCOORD1;
+        };
+        void mainVS_SkyDome (out SkyDomeVSOutput _Output, in SkyDomeVSInput _Input)
+        {
+	        _Output.HPosition 	= mul( _Input.position, mMVP );
+			_Output.HPosition.z = _Output.HPosition.w;
+			_Output.texcoord 	= _Input.texcoord;
+	        //_Output.vWorldPos 	= mul( _Input.position, mWorld );
+        }
+        float4 mainPS_SkyDome( SkyDomeVSOutput _Input ) : COLOR0
+        {
+		  /*
+		  float3 eyePos = getEyePosFromTexCoord (_Input.t0, _Input.t1);
+		  //--- wangjian modified ---//
+		  // change to linear fog
+		  //float factor = exp(-dot(eyePos, eyePos) * fogDensity);
+		  float factor = saturate( 1.0f - ( eyePos.z - cameraNearFarFactor.x ) * cameraNearFarFactor.y );
+		  //-------------------------//
+		  
+		  float dist = sqrt(dot(eyePos, eyePos));
+          eyePos /= dist;
+          float _fVL = dot(litDirView, -eyePos);
+          float fG = scat[1].w + scat[0].w * _fVL;
+          fG = rsqrt(fG);
+          fG = fG * fG * fG;
+          float3 _vMie = scat[1].rgb * fG;
+          float3 _vRayleigh = scat[0].rgb * (1.0f + _fVL * _fVL);
+          float3 _vInscattering = scat[2] * (_vMie + _vRayleigh) + scat[4].rgb;
+		  */
+          
+		#if 0
+			return float4( 0,1,0, 1.0 );
+		#else
+			return float4( tex2D( skyDomeSampler,_Input.texcoord).rgb, 1.0 );
+		#endif
+        }
+		
+		////////////////////////////// simple fog ( no scattering ) /////////////////////////////////////////
+		
+		struct SimpleFogVSInput
+        {
+          float3 pos : POSITION;
+          float2 t0 : TEXCOORD0;
+        };
+        struct SimpleFogVSOutput
+        {
+          float4 pos : POSITION;
+          float2 t0 : TEXCOORD0;
+          //float3 t1 : TEXCOORD1;
+        };
+		
+        SimpleFogVSOutput mainVS_SimpleFog(SimpleFogVSInput _Input)
+        {
+          SimpleFogVSOutput _Output;
+          _Output.t0 = _Input.t0;
+          //_Output.t1 = getEyeDirFromTexCoord (_Input.t0);
+          _Output.pos = float4(_Input.pos, 1.0);
+          return _Output;
+        }
+        float4 mainPS_SimpleFog(SimpleFogVSOutput _Input) : COLOR0
+        {			
+			float depth = getDepth (_Input.t0);
+			float depth_linear = linearizeDepth (depth);
+						
+            //float3 eyePos = _Input.t1 * depth_linear / _Input.t1.z;
+          
+			//--- wangjian modified ---//
+			// change to linear fog
+			//float factor = exp(-dot(eyePos, eyePos) * fogDensity);
+			//depth_linear = depth_linear > ( cameraNearFarFactor.w - 1.0f ) ? cameraNearFarFactor.z : depth_linear;
+			float factor = saturate( 1.0f - ( depth_linear - cameraNearFarFactor.x ) * cameraNearFarFactor.y );
+			//-------------------------//
+		  
+			/*
+			float dist = sqrt(dot(eyePos, eyePos));
+			eyePos /= dist;
+			float _fVL = dot(litDirView, -eyePos);
+			float fG = scat[1].w + scat[0].w * _fVL;
+			fG = rsqrt(fG);
+			fG = fG * fG * fG;
+			float3 _vMie = scat[1].rgb * fG;
+			float3 _vRayleigh = scat[0].rgb * (1.0f + _fVL * _fVL);
+			float3 _vInscattering = scat[2] * (_vMie + _vRayleigh) + scat[4].rgb;
+			*/
+			
+			return float4( fogColor.rgb, saturate( ( 1.0f - factor ) * fogDensity ) );
+        }
+        
+	]]></code>
+	<effect name="Blur" scheme="deferred" schemelayer="shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none" />
+			</rasterizer_state>
+			<vertexshader entry="mainVS_Blur" target="vs_3_0" />
+			<pixelshader entry="mainPS_Blur" target="ps_3_0" />
+		</pass>														
+	</effect>
+	<effect name="Grid" scheme="deferred" schemelayer="shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none" />
+			</rasterizer_state>
+			<vertexshader entry="mainVS_Grid" target="vs_2_0"/>
+			<pixelshader entry="mainPS_Grid" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="CloudPlane" scheme="deferred" schemelayer="shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="lessequal"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="srcalpha"/>
+				<destblend value="invsrcalpha"/>
+			</alphablend_state>
+			<vertexshader entry="mainVS_CloudPlane" target="vs_2_0"/>
+			<pixelshader entry="mainPS_CloudPlane" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="SkyPlane" scheme="deferred" schemelayer="shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="lessequal"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="mainVS_SkyPlane" target="vs_2_0"/>
+			<pixelshader entry="mainPS_SkyPlane" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="Fog" scheme="deferred" schemelayer="shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="srcalpha"/>
+				<destblend value="invsrcalpha"/>
+			</alphablend_state>
+			<vertexshader entry="mainVS_Fog" target="vs_2_0"/>
+			<pixelshader entry="mainPS_Fog" target="ps_2_0"/>
+		</pass>
+	</effect>
+	
+	
+	
+	<effect name="SkyBox" scheme="deferred" schemelayer="shading">
+		<pass>
+		  <streamdefine>
+			<stream semantec="position" type="float4"/>
+		  </streamdefine>
+		  <depth_state>
+			<zfunc value="lessequal"/>
+			<zwrite value="false"/>
+		  </depth_state>
+		  <rasterizer_state>
+			<cullmode value="none"/>
+		  </rasterizer_state>
+		  <vertexshader entry="mainVS_SkyBox" target="vs_2_0"/>
+		  <pixelshader entry="mainPS_SkyBox" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="SkyDome" scheme="deferred" schemelayer="forward">
+		<pass>
+		  <streamdefine>
+			<stream semantec="position" type="float4"/>
+		  </streamdefine>
+		  <depth_state>
+			<zfunc value="lessequal"/>
+			<zwrite value="false"/>
+		  </depth_state>
+		  <rasterizer_state>
+			<cullmode value="none"/>
+		  </rasterizer_state>
+		  <vertexshader entry="mainVS_SkyDome" target="vs_2_0"/>
+		  <pixelshader entry="mainPS_SkyDome" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="SimpleFog" scheme="deferred" schemelayer="forward">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="srcalpha"/>
+				<destblend value="invsrcalpha"/>
+			</alphablend_state>
+			<vertexshader entry="mainVS_SimpleFog" target="vs_2_0"/>
+			<pixelshader entry="mainPS_SimpleFog" target="ps_2_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="SkyDome_fs" scheme="custom" schemelayer="Solid">
+		<pass>
+		  <streamdefine>
+			<stream semantec="position" type="float4"/>
+		  </streamdefine>
+		  <depth_state>
+			<zfunc value="lessequal"/>
+			<zwrite value="false"/>
+		  </depth_state>
+		  <rasterizer_state>
+			<cullmode value="none"/>
+		  </rasterizer_state>
+		  <vertexshader entry="mainVS_SkyDome" target="vs_2_0"/>
+		  <pixelshader entry="mainPS_SkyDome" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>	

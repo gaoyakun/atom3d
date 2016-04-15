@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<material auto="1">
+  <include filename="/materials/builtin/deferredrendering.inc"/>
+  
+  <include filename="/materials/builtin/forward/forwardrendering.inc" />
+  
+  <param name="ModelViewProj" type="float4x4" default="$MVP_Matrix"/>
+  <param name="WorldMatrix" type="float4x4" default="$World_Matrix"/>
+  <param name="invTerrainSize" type="float2"/>
+  <param name="windDir" type="float3"/>
+  <param name="windStrength" type="float"/>
+  <param name="timestamp" type="float" default="$TimeInSecond"/>
+  <param name="invFadeoutDistance" type="float"/>
+  <param name="viewSpaceNormal" type="float3"/>
+  <param name="grassTexture" type="texture"/>
+  <param name="grassSampler" type="sampler2D">
+    <texture value="$grassTexture"/>
+    <filter value="anisotropic"/>
+    <srgb value="true"/>
+  </param>
+		
+  <code>
+    <![CDATA[
+	struct a2v									
+	{											
+		float3 position : POSITION;				
+		float3 normal : NORMAL;					
+		float2 tex0 : TEXCOORD0;				
+	};											
+	struct v2p									
+	{											
+		float4 position : POSITION0;			
+		float2 tex0 : TEXCOORD0;				
+		float2 tex1 : TEXCOORD1;				
+	};
+	struct v2p_shadowmap
+	{
+		float4 position: POSITION;
+		float2 tex0: TEXCOORD0;
+		float depth: TEXCOORD1;
+	};	
+	struct output								
+	{											
+		float4 color : COLOR0;					
+	};
+	
+	float3 calcVertexDistortion (in a2v IN)		
+	{											
+		float2 sinxz = sin(IN.position.xz * 0.1 + timestamp);													
+		return IN.position + windDir * float3(sinxz.x, 0, sinxz.y) * windStrength * (1.0 - IN.tex0.y);	
+	}																											
+	void vs( in a2v IN, out v2p OUT )																			
+	{																											
+		float3 v = calcVertexDistortion (IN);																	
+		float4 po = float4(v, 1);																				
+		OUT.position = mul(po, ModelViewProj);																	
+		OUT.tex0 = IN.tex0;																						
+		OUT.tex1 = IN.position.xz * invTerrainSize;																
+	}
+	void ps_alphatest_phase	(	in v2p IN, 
+							#if SUPPORT_SM30 && USE_Albedo_Encode
+								in float4 screenCoord : VPOS,	// wangjian added
+							#endif
+								out Gbuffer_PSOutput OUT
+							)
+	{
+    	resetGbufferLayout (OUT);
+		float4 color = tex2D(grassSampler, IN.tex0);
+		clip (color.a - 0.5);
+		storeRawAlbedoAndGlossness (color.rgb, 0.f, OUT
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+									,screenCoord
+									#endif
+									);
+		storeRawNormalAndSpecularPower (viewSpaceNormal, 0.f, OUT);
+	}
+	void vs_shadowmap (in a2v IN, out v2p_shadowmap OUT)
+	{
+		float3 v = calcVertexDistortion (IN);
+		float4 po = float4(v, 1);																				
+		OUT.position = mul(po, ModelViewProj);
+		OUT.tex0 = IN.tex0;
+		OUT.depth = OUT.position.z/OUT.position.w;
+	}
+	float4 ps_shadowmap (in v2p_shadowmap IN): COLOR0
+	{
+		float4 color = tex2D(grassSampler, IN.tex0);
+		clip (color.a - 0.5);
+		return IN.depth;
+	}
+	
+	////////////////////////////////////// forward shading effect //////////////////////////////////////
+	
+	struct a2v_fs									
+	{											
+		float3 position : POSITION;
+		float3 normal 	: NORMAL;				
+		float2 tex0 	: TEXCOORD0;			
+	};											
+	struct v2p_fs								
+	{											
+		float4 position : POSITION0;			
+		float2 tex0 	: TEXCOORD0;
+		float4 fog 		: TEXCOORD1;		
+	};
+	float3 calcVertexDistortion_fs (in a2v_fs IN)		
+	{											
+		float2 sinxz = sin(IN.position.xz * 0.1 + timestamp);													
+		return IN.position + windDir * float3(sinxz.x, 0, sinxz.y) * windStrength * (1.0 - IN.tex0.y);	
+	}																											
+	void vs_fs( in a2v_fs IN, out v2p_fs OUT )																		
+	{																											
+		float3 v = calcVertexDistortion_fs (IN);																	
+		float4 po = float4(v, 1);
+		
+		OUT.position 	= mul(po, ModelViewProj);																	
+		OUT.tex0 		= IN.tex0;
+		OUT.fog			= CalcFog(OUT.position.w);
+	}
+	float4 ps_alphatest_phase_fs(	in v2p_fs IN ) : COLOR0
+	{
+		float4 color = tex2D(grassSampler, IN.tex0);
+		clip (color.a - 0.5);
+		
+		color *= DiffuseLighting(viewSpaceNormal,1.0);
+		
+		ApplyFog( color, IN.fog );
+		
+		return color;
+	}
+	
+	
+    ]]>
+  </code>
+
+	<effect name="testPhase" scheme="deferred" schemelayer="GbufferConstruction">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="none"/>
+      </rasterizer_state>
+      <vertexshader entry="vs" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest_phase" target="ps_2_0" />
+    </pass>
+	</effect>
+	
+	<effect name="ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="none"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_shadowmap" target="vs_2_0"/>
+      <pixelshader entry="ps_shadowmap" target="ps_2_0" />
+    </pass>
+  </effect>
+  
+  
+  <effect name="testPhase_fs" scheme="custom" schemelayer="Solid">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="none"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_fs" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest_phase_fs" target="ps_2_0" />
+    </pass>
+	</effect>
+	
+</material>
+

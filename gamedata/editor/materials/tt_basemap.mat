@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<param name="detail0" type="texture"/>
+	<param name="detail1" type="texture"/>
+	<param name="detail2" type="texture"/>
+	<param name="detail3" type="texture"/>
+	<param name="detail4" type="texture"/>
+	<param name="detail5" type="texture"/>
+	<param name="detail6" type="texture"/>
+	<param name="detail7" type="texture"/>
+	<param name="detail8" type="texture"/>
+	<param name="detail9" type="texture"/>
+	<param name="detail10" type="texture"/>
+	<param name="detail11" type="texture"/>
+	<param name="alpha0" type="texture"/>
+	<param name="alpha1" type="texture"/>
+	<param name="alpha2" type="texture"/>
+	<param name="detail0_uvscale" type="float4"/>
+	<param name="detail1_uvscale" type="float4"/>
+	<param name="detail2_uvscale" type="float4"/>
+	<param name="detail3_uvscale" type="float4"/>
+	<param name="detail4_uvscale" type="float4"/>
+	<param name="detail5_uvscale" type="float4"/>
+	<param name="detail6_uvscale" type="float4"/>
+	<param name="detail7_uvscale" type="float4"/>
+	<param name="detail8_uvscale" type="float4"/>
+	<param name="detail9_uvscale" type="float4"/>
+	<param name="detail10_uvscale" type="float4"/>
+	<param name="detail11_uvscale" type="float4"/>
+	<param name="detailSampler0" type="sampler2D">
+		<texture value="$detail0"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler1" type="sampler2D">
+		<texture value="$detail1"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler2" type="sampler2D">
+		<texture value="$detail2"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler3" type="sampler2D">
+		<texture value="$detail3"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler4" type="sampler2D">
+		<texture value="$detail4"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler5" type="sampler2D">
+		<texture value="$detail5"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler6" type="sampler2D">
+		<texture value="$detail6"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler7" type="sampler2D">
+		<texture value="$detail7"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler8" type="sampler2D">
+		<texture value="$detail8"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler9" type="sampler2D">
+		<texture value="$detail9"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler10" type="sampler2D">
+		<texture value="$detail10"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="detailSampler11" type="sampler2D">
+		<texture value="$detail11"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="alphaSampler0" type="sampler2D">
+		<texture value="$alpha0"/>
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+	</param>
+	<param name="alphaSampler1" type="sampler2D">
+		<texture value="$alpha1"/>
+		<filter value="llp"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+	</param>
+	<param name="alphaSampler2" type="sampler2D">
+		<texture value="$alpha2"/>
+		<filter value="llp"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+	</param>
+
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 tex0: TEXCOORD0;
+		};
+
+		struct v2p
+		{
+			float4 position: POSITION;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		v2p vs (in a2v IN)
+		{
+			v2p OUT;
+			OUT.position = IN.position;
+			OUT.tex0 = IN.tex0;
+			return OUT;
+		}
+
+		float4 ps (in v2p IN) : COLOR
+		{
+			float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+		        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+		        float4 factor2 = tex2D(alphaSampler2, IN.tex0);
+		        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+		        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+		        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+		        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+		        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+		        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+		        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+		        float4 color7 = tex2D(detailSampler7, IN.tex0*detail7_uvscale);
+		        float4 color8 = tex2D(detailSampler8, IN.tex0*detail8_uvscale);
+		        float4 color9 = tex2D(detailSampler9, IN.tex0*detail9_uvscale);
+		        float4 color10 = tex2D(detailSampler10, IN.tex0*detail10_uvscale);
+		        float4 color11 = tex2D(detailSampler11, IN.tex0*detail11_uvscale);
+		        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r+color7*factor1.a+color8*factor2.b+color9*factor2.g+color10*factor2.r+color11*factor2.a;
+			return float4(color.rgb, 1.0);
+		}
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0"/>	
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0" />
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>
+

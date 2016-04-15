@@ -1,0 +1,554 @@
+<?xml version="1.0"?>
+<material auto="1">
+  <include filename="/materials/builtin/deferredrendering.inc"/>
+  <param name="hasVertexColor" type="int" editortype="bool"/>
+  <param name="hasDiffuseTexture" type="int" editortype="bool"/>
+  <param name="enableAlphaBlend" type="int" editortype="bool"/>
+  <param name="enableAlphaTest" type="int" editortype="bool"/>
+  <param name="alpharef" type="float" editortype="none"/>
+  <param name="cullmode" type="int" default="1" editortype="e_cullmode"/>
+  <param name="diffuseTexture" type="texture" editortype="none"/>
+  <param name="diffuseSampler" type="sampler2D">
+    <texture value="$diffuseTexture"/>
+    <filter value="anisotropic"/>
+  </param>
+  <param name="diffuseColor" type="float4" default="1.0,1.0,1.0,1.0" editortype="color"/>
+  <param name="MVP" type="float4x4" default="$MVP_Matrix" />
+  <param name="worldview" type="float4x4" default="$WorldView_Matrix"/>
+		
+	<code>
+    <![CDATA[
+    struct a2v_blend_nodiffuse
+    {
+      float4 position: POSITION;
+      float2 tex0: TEXCOORD0;
+    };
+    
+    struct a2v_blend_diffuse
+    {
+      float4 position: POSITION;
+      float4 diffuse: COLOR0;
+      float2 tex0: TEXCOORD0;
+    };
+    
+    struct a2v_blend_nodiffuse_notex
+    {
+      float4 position: POSITION;
+    };
+    
+    struct a2v_blend_diffuse_notex
+    {
+      float4 position: POSITION;
+      float4 diffuse: COLOR0;
+    };
+    
+    struct v2p_blend
+    {
+      float4 position: POSITION;
+      float4 diffuse: COLOR0;
+      float2 tex0: TEXCOORD0;
+    };
+    
+    struct v2p_blend_notex
+    {
+      float4 position: POSITION;
+      float4 diffuse: COLOR0;
+    };
+    
+		void vs_blend_nodiffuse (in a2v_blend_nodiffuse IN, out v2p_blend OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.diffuse = diffuseColor;
+			OUT.tex0 = IN.tex0;
+		}
+		
+		void vs_blend_diffuse (in a2v_blend_diffuse IN, out v2p_blend OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.tex0 = IN.tex0;
+		}
+		
+		void vs_blend_nodiffuse_notex (in a2v_blend_nodiffuse_notex IN, out v2p_blend_notex OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.diffuse = diffuseColor;
+		}
+		
+		void vs_blend_diffuse_notex (in a2v_blend_diffuse_notex IN, out v2p_blend_notex OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.diffuse = diffuseColor * IN.diffuse;
+		}
+		
+		float4 ps_blend (in v2p_blend IN) : COLOR
+		{
+			return tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+		}				
+    
+		float4 ps_blend_notex (in v2p_blend_notex IN) : COLOR
+		{
+			return IN.diffuse;
+		}				
+    
+		float4 ps_blend_alphatest (in v2p_blend IN) : COLOR
+		{
+      float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+      clip (color.a - alpharef);
+			return color;
+		}				
+    
+		float4 ps_blend_notex_alphatest (in v2p_blend_notex IN) : COLOR
+		{
+      clip (IN.diffuse.a - alpharef);
+			return IN.diffuse;
+		}				
+    
+		struct a2v_nodiffuse
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+      float3 tangent: TANGENT;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct a2v_diffuse
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+      float3 tangent: TANGENT;
+      float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct a2v_nodiffuse_notex
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+      float3 tangent: TANGENT;
+		};
+		
+		struct a2v_diffuse_notex
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+      float3 tangent: TANGENT;
+      float4 diffuse: COLOR0;
+		};
+		
+		struct v2p
+		{
+			float4 position: POSITION;
+			float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+			float3 viewpos: TEXCOORD1;
+			float3 normal: TEXCOORD2;
+		};
+		
+		struct v2p_notex
+		{
+			float4 position: POSITION;
+			float4 diffuse: COLOR0;
+			float3 viewpos: TEXCOORD0;
+			float3 normal: TEXCOORD1;
+		};
+		
+		void vs_nodiffuse (in a2v_nodiffuse IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview);
+			OUT.diffuse = diffuseColor;
+			OUT.tex0 = IN.tex0;
+			OUT.normal = IN.tangent;
+		}
+		
+		void vs_diffuse (in a2v_diffuse IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview);
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.tex0 = IN.tex0;
+			OUT.normal = IN.tangent;
+		}
+		
+		void vs_nodiffuse_notex (in a2v_nodiffuse_notex IN, out v2p_notex OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview);
+			OUT.diffuse = diffuseColor;
+			OUT.normal = IN.tangent;
+		}
+		
+		void vs_diffuse_notex (in a2v_diffuse_notex IN, out v2p_notex OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview);
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.normal = IN.tangent;
+		}
+		
+		void ps (in v2p IN, out Gbuffer_PSOutput OUT)
+		{
+      resetGbufferLayout (OUT);
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeNormalAndSpecularPower (float4(normalize(IN.normal)*0.5+0.5, 64.0), OUT);
+		}				
+    
+    void ps_notex (in v2p_notex IN, out Gbuffer_PSOutput OUT)
+    {
+      resetGbufferLayout (OUT);
+			storeAlbedoAndGlossness (float4(IN.diffuse.rgb, 1.0), OUT);
+			storeNormalAndSpecularPower (float4(normalize(IN.normal)*0.5+0.5, 64.0), OUT);
+    }
+    
+		void ps_alphatest (in v2p IN, out Gbuffer_PSOutput OUT)
+		{
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+      clip (color.a - alpharef);
+      resetGbufferLayout (OUT);
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeNormalAndSpecularPower (float4(normalize(IN.normal)*0.5+0.5, 64.0), OUT);
+		}				
+    
+    void ps_notex_alphatest (in v2p_notex IN, out Gbuffer_PSOutput OUT)
+    {
+      clip (IN.diffuse.a - alpharef);
+      resetGbufferLayout (OUT);
+			storeAlbedoAndGlossness (float4(IN.diffuse.rgb, 1.0), OUT);
+			storeNormalAndSpecularPower (float4(normalize(IN.normal)*0.5+0.5, 64.0), OUT);
+    }
+    
+    ]]>
+  </code>
+	
+	<effect name="noAlphaBlend_noAlphaTest_noDiffuse_noTexture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+			</streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+			<vertexshader entry="vs_nodiffuse_notex" target="vs_2_0"/>
+			<pixelshader entry="ps_notex" target="ps_2_0" />
+		</pass>
+	</effect>
+
+  <effect name="noAlphaBlend_noAlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse" target="vs_2_0"/>
+      <pixelshader entry="ps" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaBlend_noAlphaTest_Diffuse_noTexture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_notex" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaBlend_noAlphaTest_Diffuse_Texture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse" target="vs_2_0"/>
+      <pixelshader entry="ps" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaBlend_AlphaTest_noDiffuse_noTexture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_notex_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaBlend_AlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaBlend_AlphaTest_Diffuse_noTexture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_notex_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaBlend_AlphaTest_Diffuse_Texture" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_noAlphaTest_noDiffuse_noTexture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_nodiffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_blend_notex" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_noAlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_nodiffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_blend" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_noAlphaTest_Diffuse_noTexture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_diffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_blend_notex" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_noAlphaTest_Diffuse_Texture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <eq param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_diffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_blend" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_AlphaTest_noDiffuse_noTexture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_nodiffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_blend_notex_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_AlphaTest_noDiffuse_Texture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_nodiffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_blend_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_AlphaTest_Diffuse_noTexture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <eq param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_diffuse_notex" target="vs_2_0"/>
+      <pixelshader entry="ps_blend_notex_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaBlend_AlphaTest_Diffuse_Texture" scheme="deferred" schemelayer="forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <ne param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <ne param="hasDiffuseTexture" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_blend_diffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_blend_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+</material>
+

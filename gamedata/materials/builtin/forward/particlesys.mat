@@ -1,0 +1,724 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<param name="texCoords" type="float4x4"/>
+	<param name="preRotatedQuad" type="float4x4"/>
+	<param name="modelViewProj" type="float4x4" default="$MVP_Matrix"/>
+	<param name="worldview" type="float4x4" default="$WorldView_Matrix"/>
+	<param name="proj" type="float4x4" default="$Projection_Matrix"/>
+	<param name="worldmatrix" type="float4x4" default="$World_Matrix"/>
+	<param name="viewDirection" type="float3"/>
+	<param name="particleTexture" type="texture" editortype="none"/>
+	<param name="color" type="float4" default="1,1,1,1" editortype="color"/>
+	<param name="colorMultiplier" type="float" default="1" editortype="none"/>
+	<param name="colorTexture" type="texture" editortype="none"/>
+	<param name="jitterPower" type="float" editortype="none"/>
+	<param name="transparency" type="float" editortype="none"/>
+	<param name="srcblend" type="int" editortype="e_blendfunc"/>
+	<param name="destblend" type="int" editortype="e_blendfunc"/>
+	<param name="enableAlphaBlend" type="int" default="1" editortype="bool"/>
+	<param name="zfunc" type="int" editortype="e_comparefunc"/>
+	<param name="zwrite" type="int" editortype="bool"/>
+	<param name="enableDirectional" type="int" editortype="bool"/>
+	<param name="enableWorldSpace" type="int" editortype="bool"/>
+	<param name="hasTexture2D" type="int"/>
+	<param name="hasTexture3D" type="int"/>
+	<param name="hasColorTexture" type="int"/>
+	<param name="particleSampler" type="sampler">
+		<texture value="$particleTexture"/>
+		<filter value="nnn"/>
+		<srgb value="true"/>
+	</param>
+	<param name="colorSampler" type="sampler">
+		<texture value="$colorTexture"/>
+		<filter value="lln"/>
+	</param>
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float4 tex0: TEXCOORD0;
+			float3 tex1: TEXCOORD1;
+		};
+		struct v2p
+		{
+			float4 position: POSITION;
+			float3 tex0: TEXCOORD0;
+		};
+
+		float2 rotation (float t, float2 v)
+		{
+			float s;
+			float c;
+			sincos(t, s, c);
+			float3 rc1 = float3(c, s, 0.5*(1.0-c-s));
+			float3 rc2 = float3(-s, c, 0.5*(1.0-c+s));
+			float3 uv = float3(v, 1.0);
+			return float2(dot(rc1, uv), dot(rc2, uv));
+		}
+
+		float3 rotation3 (float t, float3 v)
+		{
+			float s;
+			float c;
+			sincos (t, s, c);
+
+			float3x3 rot = float3x3(
+				float3(c, -s, 0),
+				float3(s, c, 0),
+				float3(0, 0, 1));
+			
+			return mul(v, rot);
+		}
+
+		void vs (in a2v IN, out v2p OUT)
+		{
+			float vertexIndex = IN.position.w;
+			float3 z = normalize(IN.tex1);
+			float3 x = float3(-z.y, z.x, 0.f);
+			float3 y = cross(z, x);
+			x = cross(y, z);
+			float3 offset = sin(IN.tex0.z)*x + cos(IN.tex0.z)*y;
+			float3 pos = IN.position.xyz + offset*jitterPower;
+			float3 eyePos = mul(float4(pos, 1), worldview).xyz;
+			float3 eyeD = mul(float4(preRotatedQuad[vertexIndex].xyz, 0.0), worldview).xyz;
+			float3 offset2 = rotation3(IN.tex0.y, eyeD);
+
+			OUT.position = mul(float4(eyePos+offset2*IN.tex0.x, 1.0), proj);
+			OUT.tex0 = float3(texCoords[vertexIndex].xy, IN.tex0.w);
+		}
+
+		void vs_directional (in a2v IN, out v2p OUT)
+		{
+			float vertexIndex = IN.position.w;
+			float3 z = normalize(IN.tex1);
+			float3 x = float3(-z.y, z.x, 0.f);
+			float3 y = cross(z, x);
+			x = cross(y, z);
+			float3 offset = sin(IN.tex0.z)*x + cos(IN.tex0.z)*y;
+			float3 pos = IN.position.xyz + offset*jitterPower;
+			float3 yaxis = normalize(IN.tex1);
+			float3 xaxis = cross(viewDirection, yaxis);
+			float4 q = preRotatedQuad[vertexIndex]*IN.tex0.x;
+			OUT.position = mul(float4(pos+q.x*xaxis+q.y*yaxis,1.0), modelViewProj);
+			OUT.tex0 = float3(rotation(IN.tex0.y, texCoords[vertexIndex].xy), IN.tex0.w);
+		}
+
+		void vs_directional_world (in a2v IN, out v2p OUT)
+		{
+			float vertexIndex = IN.position.w;
+			float3 z = normalize(IN.tex1);
+			float3 x = float3(-z.y, z.x, 0.f);
+			float3 y = cross(z, x);
+			x = cross(y, z);
+			float3 offset = sin(IN.tex0.z)*x + cos(IN.tex0.z)*y;
+			float3 pos = IN.position.xyz + offset*jitterPower;
+			float3 yaxis = normalize(mul(float4(IN.tex1, 0.0), worldmatrix).xyz);
+			float3 xaxis = cross(viewDirection, yaxis);
+			float4 q = preRotatedQuad[vertexIndex]*IN.tex0.x;
+			OUT.position = mul(float4(pos+q.x*xaxis+q.y*yaxis,1.0), modelViewProj);
+			OUT.tex0 = float3(rotation(IN.tex0.y, texCoords[vertexIndex].xy), IN.tex0.w);
+		}
+		
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		
+		float4 ps (in v2p IN) : COLOR0
+		{
+			return float4(color.rgb * colorMultiplier, transparency);	
+		}		
+
+		float4 ps_tex2D (in v2p IN): COLOR0
+		{
+			float4 c = tex2D(particleSampler, IN.tex0.xy);
+			c.a *= transparency;
+			c.rgb *= color.rgb * colorMultiplier;
+			return c;
+		}
+
+		float4 ps_tex3D (in v2p IN): COLOR0
+		{
+			float4 c = tex3D(particleSampler, IN.tex0);
+			c.a *= transparency;
+			c.rgb *= color.rgb * colorMultiplier;
+			return c;
+		}
+
+		float4 ps_color (in v2p IN) : COLOR0
+		{
+			float4 c = tex1D(colorSampler, IN.tex0.z);
+			c.a *= transparency;
+			c.rgb *= color.rgb * colorMultiplier;
+			return c;
+		}
+
+		float4 ps_color_tex2D (in v2p IN) : COLOR0
+		{
+			float4 c = tex2D(particleSampler, IN.tex0.xy) * tex1D(colorSampler, IN.tex0.z);
+			c.a *= transparency;
+			c.rgb *= color.rgb * colorMultiplier;
+			return c;
+		}
+
+		float4 ps_color_tex3D (in v2p IN) : COLOR0
+		{
+			float4 c = tex3D(particleSampler, IN.tex0) * tex1D(colorSampler, IN.tex0.z);
+			c.a *= transparency;
+			c.rgb *= color.rgb * colorMultiplier;
+			return c;
+		}
+	]]></code>
+	
+	<effect name="PS" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<eq param="enableDirectional" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<eq param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_world" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<ne param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional_world" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_tex2d" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<eq param="enableDirectional" value="0"/>
+			<ne param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_tex2D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_tex2D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<eq param="enableWorldSpace" value="0"/>
+			<ne param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional" target="vs_2_0"/>
+			<pixelshader entry="ps_tex2D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_world_tex2D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<ne param="enableWorldSpace" value="0"/>
+			<ne param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional_world" target="vs_2_0"/>
+			<pixelshader entry="ps_tex2D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_tex3d" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<eq param="enableDirectional" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<ne param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_tex3D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_tex3D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<eq param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<ne param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional" target="vs_2_0"/>
+			<pixelshader entry="ps_tex3D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_world_tex3D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<ne param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<ne param="hasTexture3D" value="0"/>
+			<eq param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional_world" target="vs_2_0"/>
+			<pixelshader entry="ps_tex3D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_color" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<eq param="enableDirectional" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_color" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_color" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<eq param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional" target="vs_2_0"/>
+			<pixelshader entry="ps_color" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_world" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<ne param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional_world" target="vs_2_0"/>
+			<pixelshader entry="ps_color" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_tex2d" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<eq param="enableDirectional" value="0"/>
+			<ne param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_color_tex2D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_tex2D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<eq param="enableWorldSpace" value="0"/>
+			<ne param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional" target="vs_2_0"/>
+			<pixelshader entry="ps_color_tex2D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_world_tex2D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<ne param="enableWorldSpace" value="0"/>
+			<ne param="hasTexture2D" value="0"/>
+			<eq param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional_world" target="vs_2_0"/>
+			<pixelshader entry="ps_color_tex2D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_tex3d" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<eq param="enableDirectional" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<ne param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_color_tex3D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_tex3D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<eq param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<ne param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional" target="vs_2_0"/>
+			<pixelshader entry="ps_color_tex3D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+	<effect name="PS_directional_world_tex3D" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableDirectional" value="0"/>
+			<ne param="enableWorldSpace" value="0"/>
+			<eq param="hasTexture2D" value="0"/>
+			<ne param="hasTexture3D" value="0"/>
+			<ne param="hasColorTexture" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float4"/>
+				<stream semantec="texcoord0" type="float4"/>
+				<stream semantec="texcoord1" type="float3"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="$enableAlphaBlend"/>
+				<srcblend value="$srcblend"/>
+				<destblend value="$destblend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="$zwrite"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_directional_world" target="vs_2_0"/>
+			<pixelshader entry="ps_color_tex3D" target="ps_2_0" />
+		</pass>
+	</effect>
+
+</material>
+

@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<material auto="1">
+  <include filename="/materials/builtin/deferredrendering.inc"/>
+  <param name="HDR" type="int" default="0" editortype="bool"/>
+  <param name="Fog" type="int" default="0" editortype="bool"/>
+  <param name="vEye" type="float4"/>
+  <param name="vSunPos" type="float4"/>
+  <param name="vInvWavelength" type="float4"/>
+  <param name="vHG" type="float4"/>
+  <param name="Tex" type="float4"/>
+  <param name="fKrESun" type="float"/>
+  <param name="fKmESun" type="float"/>
+  <param name="fExposure" type="float" default="-2.0"/>
+  <param name="worldViewProj" type="float4x4"/>
+  <param name="viewToWorld" type="float4x4" default="$View_Matrix"/>
+  <param name="c" type="float" default="0.002"/>
+  <param name="b" type="float" default="0.002"/>
+  <param name="Groundc0" type="float4"/>
+  <param name="Groundc1" type="float4"/>
+  <param name="fogDensity" type="float"/>
+  <param name="tSkyBuffer" type="texture"/>
+  <param name="fHeightFalloff" type="float" default="0.002"/>
+  <param name="fGlobalDensity" type="float" default="0.002"/>
+  <param name="SkyBufferSampler" type="sampler2D" >
+    <filter value="ppp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+    <texture value="$tSkyBuffer"/>
+  </param>
+  <code>
+        <![CDATA[
+    struct skyDomeVertexInput
+    {
+      float3 pos : POSITION;
+      float2 t0 : TEXCOORD0;
+    };
+    struct skyDomeVertexOutput
+    {
+      float4 pos : POSITION;
+      float2 t0 : TEXCOORD0;
+      float3 t1 : TEXCOORD1;
+    };
+    skyDomeVertexOutput skyFromGround_VS(skyDomeVertexInput IN)
+    {
+      skyDomeVertexOutput Out;
+      Out.t0 = IN.t0;
+      Out.t1 = vEye - IN.pos;
+      Out.pos = mul(float4(IN.pos.xyz, 1.0), worldViewProj);
+      return Out;
+    }
+    float getMiePhase (float fCos, float fCos2)
+    {
+      return vHG.x * (1.0 + fCos2) / pow(vHG.y - vHG.z * fCos, 1.f);
+    }
+    float getRayleighPhase (float fCos2)
+    {
+      return 0.75 + 0.75 * fCos2;
+    }
+    float3 tonemap(float3 LDR)
+    {
+      return 1.0f - exp(fExposure * LDR);
+    }
+    struct skyDomePixelOutput
+    {
+      float4 color : COLOR0;
+			float depth : DEPTH0;
+    };
+    skyDomePixelOutput skyFromGround_PS(skyDomeVertexOutput IN)
+    {
+      skyDomePixelOutput Out;
+      float2 interp = frac(IN.t0 * Tex.x);
+      float4 S00 = tex2D(SkyBufferSampler, IN.t0);
+      float4 S10 = tex2D(SkyBufferSampler, IN.t0 + float2(Tex.y, 0.0f));
+      float4 S01 = tex2D(SkyBufferSampler, IN.t0 + float2(0.0f, Tex.y));
+      float4 S11 = tex2D(SkyBufferSampler, IN.t0 + float2(Tex.y, Tex.y));
+      float4 Dx1 = lerp(S00, S10, interp.x);
+      float4 Dx2 = lerp(S01, S11, interp.x);
+      float4 vSamples = lerp(Dx1, Dx2, interp.y);
+      
+      float3 c0 = vSamples.rgb * (vInvWavelength * fKrESun);
+      float3 c1 = vSamples.rgb * fKmESun;
+      float fCos = dot(vSunPos, IN.t1) / length(IN.t1);
+      float fCos2 = fCos * fCos;
+      float3 Mie = getMiePhase (fCos, fCos2) * c1;
+      Out.color.rgb = getRayleighPhase (fCos2) * c0 + Mie;
+      Out.color.a = 1.0;
+			Out.depth = 1.0;
+      
+      return Out;
+    }
+    skyDomePixelOutput skyFromGroundHDR_PS(skyDomeVertexOutput IN)
+    {
+      skyDomePixelOutput Out;
+      float2 interp = frac(IN.t0 * Tex.x);
+      float4 S00 = tex2D(SkyBufferSampler, IN.t0);
+      float4 S10 = tex2D(SkyBufferSampler, IN.t0 + float2(Tex.y, 0.0f));
+      float4 S01 = tex2D(SkyBufferSampler, IN.t0 + float2(0.0f, Tex.y));
+      float4 S11 = tex2D(SkyBufferSampler, IN.t0 + float2(Tex.y, Tex.y));
+      float4 Dx1 = lerp(S00, S10, interp.x);
+      float4 Dx2 = lerp(S01, S11, interp.x);
+      float4 vSamples = lerp(Dx1, Dx2, interp.y);
+      
+      float3 c0 = vSamples.rgb * (vInvWavelength * fKrESun);
+      float3 c1 = vSamples.rgb * fKmESun;
+      float fCos = dot(vSunPos, IN.t1) / length(IN.t1);
+      float fCos2 = fCos * fCos;
+      float3 Mie = getMiePhase (fCos, fCos2) * c1;
+      Out.color.rgb = tonemap(getRayleighPhase (fCos2) * c0 + Mie);
+      Out.color.a = 1.0;
+			Out.depth = 1.0;
+      
+      return Out;
+    }
+    struct GroundFromGroundPixelOutput
+    {
+      float4 color : COLOR0;
+    };
+    float ComputeVolumetricFog( float3 cameraToWorldPos )
+    { 
+    #if 0
+      float f = fGlobalDensity * exp( -fHeightFalloff * vEye.y );
+      float l = length( cameraToWorldPos );
+      float fogInt = exp( -(f * l) );
+      const float cSlopeThreshold = 0.01;
+      if( abs( cameraToWorldPos.y ) > cSlopeThreshold )
+      {
+        float t = fHeightFalloff * cameraToWorldPos.y;
+        fogInt *= ( 1.0 - exp( -t ) ) / t;
+      }
+      return exp (-fGlobalDensity * fogInt);
+    #else
+      float d = length(cameraToWorldPos) * fogDensity;
+      return exp (-d*d);
+    #endif
+    }
+    
+    skyDomeVertexOutput groundFromGround_VS(skyDomeVertexInput IN)
+    {
+      skyDomeVertexOutput Out;
+      Out.t0 = IN.t0;
+      Out.t1 = getEyeDirFromTexCoord (IN.t0);
+      Out.pos = mul(float4(IN.pos.xyz, 1.0), worldViewProj);
+      return Out;
+    }
+    GroundFromGroundPixelOutput groundFromGround_PS(skyDomeVertexOutput IN)
+    {
+      GroundFromGroundPixelOutput Out;
+      
+      float3 eyePos = getEyePosFromTexCoord (IN.t0, IN.t1);
+      Out.color = Groundc0;
+      Out.color.a = 1.0 - ComputeVolumetricFog (eyePos);
+      
+      return Out;
+    }
+	]]></code>
+	<effect name="skyFromGround" scheme="deferred" schemelayer="shading">
+    <requirements>
+      <eq param="HDR" value="0"/>
+      <eq param="Fog" value="0"/>
+    </requirements>
+    <pass>
+			<streamdefine>
+				<stream semantec="position"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+			<depth_state>
+				<zfunc value="equal" />
+				<zwrite value="false" />
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none" />
+			</rasterizer_state>
+			<vertexshader entry="skyFromGround_VS" target="vs_2_0" />
+			<pixelshader entry="skyFromGround_PS" target="ps_2_0" />
+		</pass>														
+	</effect>
+  <effect name="skyFromGroundHDR" scheme="deferred" schemelayer="shading">
+    <requirements>
+      <ne param="HDR" value="0"/>
+      <eq param="Fog" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <depth_state>
+        <zfunc value="equal" />
+        <zwrite value="false" />
+      </depth_state>
+      <rasterizer_state>
+        <cullmode value="none" />
+      </rasterizer_state>
+      <vertexshader entry="skyFromGround_VS" target="vs_2_0"/>
+      <pixelshader entry="skyFromGroundHDR_PS" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="groundFromGround" scheme="deferred" schemelayer="shading">
+    <requirements>
+      <ne param="Fog" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <depth_state>
+        <zfunc value="greater"/>
+        <zwrite value="false"/>
+      </depth_state>
+      <rasterizer_state>
+        <cullmode value="none"/>
+      </rasterizer_state>
+      <alphablend_state>
+        <enable value="true"/>
+        <srcblend value="srcalpha"/>
+        <destblend value="invsrcalpha"/>
+      </alphablend_state>
+      <vertexshader entry="groundFromGround_VS" target="vs_2_0"/>
+      <pixelshader entry="groundFromGround_PS" target="ps_2_0"/>
+    </pass>
+  </effect>
+</material>	

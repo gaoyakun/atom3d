@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="gb2312" ?>
+<UI version="1">
+    <component type="panel" name="panel1" rect="348,116,211,475" id="100" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="vertical" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="1">
+        <imagelist>
+            <image id="600" type="2" normal="-9250086" hover="-9250086" hold="-9250086" disabled="-9250086" />
+        </imagelist>
+        <component type="label" name="label2" rect="-8,452,-100,24" imageid="1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="舞台元素" alignx="0" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        <component type="treectrl" name="ActorTree" rect="175,207,-100,-50" id="103" imageid="600" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" imagesize="8" lineheight="15" indent="16" textimage="-1" />
+        <component type="label" name="label1" rect="-51,283,-100,24" imageid="1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="演员列表:" alignx="0" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        <component type="cell" name="ActorCell" rect="37,248,-100,-50" id="102" imageid="1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" sizex="3" sizey="3" cellw="64" cellh="64" alignx="1" aligny="1" offsetx="0" offsetY="0" cdimage="-1" selimage="-1" frameimage="0" frameoffset="1" spacex="4" spacey="4" celldragdrop="0" growmode="2">
+            <imagelist>
+                <image id="600" type="2" normal="-1" hover="-1" hold="-1" disabled="-1" />
+                <image id="601" type="1" normal="/editor/icons/particlesys.png" hover="/editor/icons/particlesys.png" hold="/editor/icons/particlesys.png" disabled="/editor/icons/particlesys.png" region="0,0,0,0" />
+                <image id="602" type="1" normal="/editor/icons/shape.png" hover="/editor/icons/shape.png" hold="/editor/icons/shape.png" disabled="/editor/icons/shape.png" region="0,0,0,0" />
+                <image id="603" type="1" normal="/editor/icons/model.png" hover="/editor/icons/model.png" hold="/editor/icons/model.png" disabled="/editor/icons/model.png" region="0,0,0,0" />
+                <image id="604" type="1" normal="/editor/icons/ref.png" hover="/editor/icons/ref.png" hold="/editor/icons/ref.png" disabled="/editor/icons/ref.png" region="0,0,0,0" />
+                <image id="605" type="1" normal="/editor/icons/light.png" hover="/editor/icons/light.png" hold="/editor/icons/light.png" disabled="/editor/icons/light.png" region="0,0,0,0" />
+                <image id="606" type="1" normal="/editor/icons/trail.png" hover="/editor/icons/trail.png" hold="/editor/icons/trail.png" disabled="/editor/icons/trail.png" region="0,0,0,0" />
+                <image id="607" type="1" normal="/editor/icons/weapontrail.png" hover="/editor/icons/weapontrail.png" hold="/editor/icons/weapontrail.png" disabled="/editor/icons/weapontrail.png" region="0,0,0,0" />
+                <image id="608" type="1" normal="/editor/icons/decal.png" hover="/editor/icons/decal.png" hold="/editor/icons/decal.png" disabled="/editor/icons/decal.png" region="0,0,0,0" />
+            </imagelist>
+            <properties>
+                <property name="DecalId" type="int" value="608" />
+                <property name="WeaponTrailId" type="int" value="607" />
+                <property name="ParticleSysId" type="int" value="601" />
+                <property name="RefId" type="int" value="604" />
+                <property name="ShapeId" type="int" value="602" />
+                <property name="ModelId" type="int" value="603" />
+                <property name="TrailId" type="int" value="606" />
+                <property name="lightId" type="int" value="605" />
+            </properties>
+        </component>
+    </component>
+</UI>

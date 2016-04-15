@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<material core="/materials/sequence.mat">
+	<Param name="frameParams" type="vector4" value="11,0.091,0.091,0"/>
+</material>

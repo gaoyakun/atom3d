@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<material auto="1">
+  <include filename="/materials/builtin/forward/forwardrendering.inc" />
+  
+  <param name="invTerrainSize" type="float4"/>
+  <param name="numDetails" type="int"/>
+  <param name="drawDetail" type="int"/>
+  <param name="mvp" type="float4x4" default="$MVP_Matrix"/>
+  <param name="modelViewMatrix" type="float4x4" default="$WorldView_Matrix"/>
+  <param name="offsetScale" type="float4"/>
+  <param name="uvScale" type="float4"/>
+  <param name="normalMap" type="texture"/>
+  <param name="normalSampler" type="sampler2D">
+    <texture value="$normalMap"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+  </param>
+  <param name="baseMap" type="texture"/>
+  <param name="baseSampler" type="sampler2D">
+    <texture value="$baseMap"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+    <srgb value="true"/>
+  </param>
+  <param name="heightMap" type="texture"/>
+  <param name="heightSampler" type="sampler2D">
+    <texture value="$heightMap"/>
+    <filter value="ppn"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+    <srgb value="false"/>
+  </param>
+  <code>
+    <![CDATA[
+      struct TerrainVSOutput_fs
+      {
+        float4 position : POSITION;
+        float2 tex0 	: TEXCOORD0;
+		float4 fog 		: TEXCOORD1;
+      };
+      
+      TerrainVSOutput_fs TerrainVSNonDetail_fs(float4 pos: POSITION, float tex: TEXCOORD0)
+      {
+        TerrainVSOutput_fs output;
+		
+        float4 posObj;
+        posObj.xz 		= pos.xz * offsetScale.xz +offsetScale.yw;
+        float4 heightUV = float4(posObj.xz * invTerrainSize.xy, 0, 0);
+        posObj.y 		= tex2Dlod(heightSampler, heightUV).r;
+        posObj.w 		= 1.0;
+		
+        output.position = mul(posObj, mvp);
+        output.tex0 	= posObj.xz * uvScale;
+		output.fog		= CalcFog(output.position.w);
+		
+        return output;
+      }
+      
+      float4 TerrainPSNonDetail_fs(in TerrainVSOutput_fs IN) : COLOR0
+      {
+        float4 color 	= tex2D(baseSampler, IN.tex0);
+        float3 normal 	= mul(2*tex2D(normalSampler, IN.tex0).xyz-1.0, (float3x3)modelViewMatrix);
+		
+		float4 lighting = AmbientLighting();
+		lighting 		+= DiffuseLighting(normalize(normal),1);
+		color 			*= lighting;
+		color.a 		= 1;
+		
+        ApplyFog( color, IN.fog );
+			
+		return color;
+      }
+
+    ]]>
+  </code>
+  
+  <effect name="nondetail_fs" scheme="custom" schemelayer="Solid">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <depth_state>
+        <zfunc value="lessequal"/>
+        <zwrite value="true"/>
+      </depth_state>
+      <vertexshader entry="TerrainVSNonDetail_fs" target="vs_3_0"/>
+      <pixelshader entry="TerrainPSNonDetail_fs" target="ps_3_0"/>
+    </pass>
+  </effect>
+  
+</material>

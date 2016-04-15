@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<include filename="/materials/builtin/forward/forwardrendering.inc" />
+	
+	<param name="MVP" type="float4x4" default="$MVP_Matrix" />
+	<param name="View" type="float4x4" default="$View_Matrix" />
+	<param name="WorldView" type="float4x4" default="$WorldView_Matrix" />
+	<param name="World" type="float4x4" default="$World_Matrix" />
+	
+	<param name="mViewProj" type="float4x4" default="$ViewProjection_Matrix" />
+		
+	<param name="Opacity" type="float" default="0.05" editortype="none" />
+	<param name="SurfaceColor" type="float4" default="0.008, 0.52, 0.7, 1.0" editortype="color" />
+	<param name="DepthColor" type="float4" default="0.004, 0.002, 0.145, 1.0" editortype="color" />
+	<param name="ReflectColor" type="float4" default="0.004, 0.6, 0.9, 1.0" editortype="color" />
+	<param name="Extinction" type="float4" default="4.5,75.0,300, 1.0" editortype="none" />
+	<param name="TextureScale" type="float4" default="10.0, 10.0, 20.0, 20.0" editortype="none" />
+	<param name="shininess" type="float" default="0.7" editortype="none" />
+	<param name="normalScale" type="float" default="6" editortype="none" />
+	<param name="distortion" type="float" default="0.1" editortype="none" />
+	<param name="LightDir" type="float3" default="$SunLightDir" />
+	<param name="NormalMap1" type="texture" editortype="none" />
+	<param name="NormalMap2"  type="texture" editortype="none" />
+	
+	<param name="Time" type="float" default="$TimeInSecond" />
+	<param name="Velocity" type="float4" default="0.003, 0.003, 0.001, 0.001" editortype="none" />
+	<param name="EyePos" type="float3" default="$WorldSpaceEye" />
+	<param name="CausticParam" type="float4" default="30000.0, 1.0, 5.0, 3.0" editortype="none" />
+	<param name="AnimCoeffs" type="float4" default="0.00024, 0.0002, 0.05, 0.02" editortype="none" />	
+		
+	<param name="ShadedSceneMap"  type="texture" default="$Custom_ShadedSceneTexture" />
+	<param name="ShadedSceneSampler" type="sampler2D">
+		<texture value="$ShadedSceneMap"/>
+		<filter value="ppn"/>
+		<addressu value="clamp" />
+        <addressv value="clamp" />
+		<srgb value="true"/>
+	</param>
+	
+	<param name="NormalSampler1" type="sampler2D">
+		<texture value="$NormalMap1"/>
+		<filter value="lll"/>
+	</param>
+	<param name="NormalSampler2" type="sampler2D">
+		<texture value="$NormalMap2"/>
+		<filter value="lll"/>
+	</param>
+	
+	<param name="ReflectScale" type="float" default="1.0" editortype="none" />
+	<param name="EnvMapGlobal"  type="texture" editortype="none" />
+	<param name="GlobalEnvSampler" type="samplerCUBE">
+		<texture value="$EnvMapGlobal"/>
+		<filter value="lln"/>
+	</param>
+	
+	<code><![CDATA[
+	
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 texcoord: TEXCOORD0;
+		};
+		struct v2p
+		{
+			float4 position	: POSITION;
+			float4 uv		: TEXCOORD0;
+			float4 tex		: TEXCOORD1;
+			float3 worldPos	: TEXCOORD2;
+			float4 fog		: TEXCOORD3;
+		};
+		
+		void vs (in a2v IN, out v2p OUT)
+		{
+			OUT.position 	= mul(IN.position, MVP);
+			OUT.uv.xy 		= (IN.texcoord + Time * Velocity.xy) * TextureScale.xy;
+			OUT.uv.zw 		= (IN.texcoord + Time * Velocity.zw) * TextureScale.zw;
+			OUT.tex 		= getTexCoordFromClipSpace_fs (OUT.position);
+	  
+			float3 worldPos = mul(IN.position, World).xyz;
+			OUT.worldPos 	= EyePos - worldPos;
+			
+			OUT.fog			= CalcFog(OUT.position.w);
+		}
+		
+		///////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		float fresnelTerm_fs(float3 normal, float3 eyeVec)
+		{
+			float angle = 1.0f - saturate(dot(normal, eyeVec));
+			float fresnel = angle * angle;
+			//fresnel = fresnel * fresnel;
+			//fresnel = fresnel * angle;
+			return fresnel;
+		}
+		
+		float4 ps 	(	in v2p IN
+					#if SUPPORT_SM30 && USE_Albedo_Encode
+						,in float4 screenCoord : VPOS	// wangjian added
+					#endif
+					): COLOR0
+		{
+			float3 normal1 	= tex2D(NormalSampler1, IN.uv.xy).rgb * 2.f - 1.f;
+			float3 normal2 	= tex2D(NormalSampler2, IN.uv.zw).rgb * 2.f - 1.f;
+			float3 normal 	= normal1 + normal2;
+			normal 			*= float3(1.f, 1.f, normalScale);
+			normal 			= normalize(normal);
+			
+			float depthfactor = saturate( Opacity );
+			float3 waterCol = SurfaceColor;				//lerp( refraction, SurfaceColor, depthfactor );
+			
+			float3 eyeVec = normalize( IN.worldPos );
+			float h = eyeVec.y;
+			
+			waterCol = lerp(waterCol, DepthColor, saturate(0.3/Extinction));
+			
+			float fresnel = fresnelTerm_fs( normal.yzx, eyeVec );
+			
+			// world space reflection vector
+			float3 refl = reflect( -eyeVec, normal.yzx );
+			
+			float3 EnvColor = texCUBE( GlobalEnvSampler, refl ).rgb;
+			float3 refl_clr = EnvColor * ReflectColor * ReflectScale;
+			
+			waterCol = lerp(waterCol, refl_clr, fresnel);
+		
+			float4 color = float4(waterCol.rgb, 0.25 );
+			
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+		
+		
+				
+	]]></code>
+	
+	<effect name="default" scheme="custom" schemelayer="SolidTransparent">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+			</streamdefine>
+			<depth_state>
+				<zwrite value="false"/>
+			</depth_state>
+			<alphablend_state>
+                <enable value="true" />
+                <srcblend value="srcalpha" />
+                <destblend value="invsrcalpha" />
+            </alphablend_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+		
+</material>

@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<material auto="1">
+  <include filename="/materials/builtin/forward/forwardrendering.inc" />
+  
+  <param name="ModelViewProj" type="float4x4" default="$MVP_Matrix"/>
+  <param name="WorldMatrix" type="float4x4" default="$World_Matrix"/>
+  <param name="invTerrainSize" type="float2"/>
+  <param name="windDir" type="float3"/>
+  <param name="windStrength" type="float"/>
+  <param name="timestamp" type="float" default="$TimeInSecond"/>
+  <param name="invFadeoutDistance" type="float"/>
+  <param name="viewSpaceNormal" type="float3"/>
+  <param name="terrainBlend" type="int" default="1"/>
+  <param name="terrainBlendAmount" type="float" default="1" />
+  <param name="grassTexture" type="texture"/>
+  <param name="grassSampler" type="sampler2D">
+    <texture value="$grassTexture"/>
+    <filter value="anisotropic"/>
+    <srgb value="true"/>
+  </param>
+  <param name="heightTexture" type="texture"/>
+  <param name="heightSampler" type="sampler2D">
+    <texture value="$heightTexture"/>
+    <filter value="ppn"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+    <srgb value="false"/>
+  </param>
+  <param name="terranBaseTexture" type="texture"/>
+  <param name="terrainBaseSampler" type="sampler2D">
+    <texture value="$terranBaseTexture"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+    <srgb value="true"/>
+  </param>
+  
+  <code>
+    <![CDATA[
+	struct a2v_fs								
+	{											
+		float3 position : POSITION;		
+		float3 normal : NORMAL;				
+		float2 tex0 : TEXCOORD0;			
+	};											
+	struct v2p_fs									
+	{											
+		float4 position : POSITION0;			
+		float2 tex0 	: TEXCOORD0;
+		float4 fog 		: TEXCOORD1;
+	};
+		
+	float3 calcVertexDistortion_fs (in a2v_fs IN)		
+	{											
+		float2 sinxz = sin(IN.position.xz * 0.1 + timestamp);													
+		return IN.position + windDir * float3(sinxz.x, 0, sinxz.y) * windStrength * (1.0 - IN.tex0.y);	
+	}																											
+	void vs_fs( in a2v_fs IN, out v2p_fs OUT )																			
+	{																											
+		float3 v = calcVertexDistortion_fs (IN);			
+		float2 heightUV = IN.position.xz * invTerrainSize;														
+		v.y += tex2Dlod(heightSampler, float4(heightUV,0,0)).r;
+		float4 po = float4(v, 1);
+		
+		OUT.position 	= mul(po, ModelViewProj);														
+		OUT.tex0 		= IN.tex0;
+		OUT.fog			= CalcFog(OUT.position.w);
+	}
+	float4 ps_alphatest_phase_fs( in v2p_fs IN ) : COLOR0
+	{
+		float4 color = tex2D(grassSampler, IN.tex0);
+		clip (color.a - 0.5);
+		
+		color *= DiffuseLighting(viewSpaceNormal,1.0);
+		
+		ApplyFog( color, IN.fog );
+			
+		return color;
+	}
+	
+    ]]>
+  </code>
+
+	<effect name="testPhase_fs" scheme="custom" schemelayer="Solid">
+		<pass>
+		  <streamdefine>
+			<stream semantec="position"/>
+			<stream semantec="normal"/>
+			<stream semantec="texcoord0" type="float2"/>
+		  </streamdefine>
+		  <rasterizer_state>
+			<cullmode value="none"/>
+		  </rasterizer_state>
+		  <vertexshader entry="vs_fs" target="vs_3_0"/>
+		  <pixelshader entry="ps_alphatest_phase_fs" target="ps_3_0" />
+		</pass>
+	</effect>
+	
+</material>
+

@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix" />
+	<param name="View" type="float4x4" default="$View_Matrix" />
+	<param name="WorldView" type="float4x4" default="$WorldView_Matrix" />
+	<param name="World" type="float4x4" default="$World_Matrix" />
+	<param name="heightFactor" type="float4" default="0,0,0, 1.0" editortype="none" />
+	<param name="depthFactor" type="float4" default="0,-1,0, 1.0" editortype="none" />
+	<param name="fogColor" type="float4" default="0.008, 0.52, 0.7, 1.0" editortype="color" />
+	<param name="DepthColor" type="float4" default="0.004, 0.002, 0.145, 1.0" editortype="color" />
+	<param name="EyePos" type="float3" default="$WorldSpaceEye" />
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 texcoord: TEXCOORD0;
+		};
+		struct v2p
+		{
+			float4 position: POSITION;
+			float4 tex: TEXCOORD0;
+			float3 worldPos: TEXCOORD1;
+			float3 viewPos: TEXCOORD2;
+		};
+		
+		void vs (in a2v IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.tex = getTexCoordFromClipSpace (OUT.position);
+			OUT.worldPos = mul(IN.position, World).xyz;
+			OUT.viewPos = mul(IN.position, WorldView).xyz;
+		}
+				
+		float4 ps 	(	in v2p IN
+					#if SUPPORT_SM30 && USE_Albedo_Encode
+						,in float4 screenCoord : VPOS
+					#endif
+					): COLOR0
+		{
+			float2 uv = IN.tex.xy/IN.tex.w;
+			
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+			float fogInt = 0;
+			
+			// scene depth
+			float scenedepth = linearizeDepth ( getDepth ( uv ) );
+			
+			// depth diffrence
+			float depth = ( scenedepth - IN.viewPos.z );
+			
+			// 
+			//float depthfactor = saturate( 1.0 - depth / scenedepth );
+			
+			// exp scene depth falloff
+			//fogInt = exp( -scenedepth * depthFactor.z );
+			// linear depth attenation
+			fogInt = saturate( ( scenedepth ) / max( depthFactor.x, 0.0001 ) );
+			
+			// depth difference attenation
+			depth = smoothstep(0,1,depth / max( depthFactor.y, 0.0001 ) );// * depthFactor.z;
+			
+			// height falloff
+			float heightfalloff = saturate( 1 - ( IN.worldPos.y ) / max( heightFactor.x, 0.0001 ) );
+			fogInt *= ( exp( -heightfalloff ) );// / heightfalloff;
+			
+			fogInt = depth * fogInt;
+			
+			// heightFactor.y : global density
+			// heightFactor.z : density offset
+			float fog = 1 - exp2( -heightFactor.y * max( fogInt - heightFactor.z, 0 ) );
+			
+			return float4(fogColor.xyz, saturate(fog));
+		}
+		
+	]]></code>
+	
+	<effect name="default" scheme="deferred" schemelayer="Shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+			</streamdefine>
+			<depth_state>
+				<zwrite value="false"/>
+			</depth_state>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="srcalpha"/>
+				<destblend value="invsrcalpha"/>
+			</alphablend_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>

@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<param name="MVP" type="float4x4" default="$MVP_Matrix" />
+	<param name="World" type="float4x4" default="$World_Matrix" />
+	<param name="EyePos" type="float3" default="$WorldSpaceEye" />
+	
+	<param name="EnvMap"  type="texture" editortype="none" />
+	<param name="EnvSampler" type="samplerCUBE">
+		<texture value="$EnvMap"/>
+		<filter value="lln"/>
+	</param>
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+		};
+		struct v2p
+		{
+			float4 position: POSITION;
+			float4 posWS : TEXCOORD0;
+			float3 normalWS : TEXCOORD1;			
+		};
+
+		void vs (in a2v IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			
+			OUT.posWS = mul(IN.position, World);
+			OUT.normalWS = mul(IN.normal, (float3x3)World);
+		}
+		
+		float4 ps (in v2p IN) : COLOR0
+		{
+			// world space reflection vector
+			float3 eyeVec = normalize( IN.posWS.xyz - EyePos.xyz );
+			float3 refl = reflect( eyeVec, normalize( IN.normalWS.xyz ) );
+			
+			return float4( texCUBE( EnvSampler, refl ).rgb, 1.0 );
+		}
+		
+	]]></code>
+	
+	<effect name="default" scheme="deferred" schemelayer="forward">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="cullnone"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>
+

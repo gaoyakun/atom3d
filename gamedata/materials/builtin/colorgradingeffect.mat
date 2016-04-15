@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<param name="MVP" type="float4x4"/>
+	<param name="halfTexSize" type="float3"/>
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<texture value="$inputTexture"/>
+	</param>
+	<param name="lutTexture" type="texture"/>
+	<param name="lutSampler" type="sampler3D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<addressw value="clamp"/>
+		<texture value="$lutTexture"/>
+	</param>
+	<code>
+          <![CDATA[
+		struct VS_OUTPUT
+		{
+			float4 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct PS_OUTPUT
+		{
+			float4 color : COLOR0;
+		};
+		PS_OUTPUT ps (in VS_OUTPUT IN)
+		{
+			PS_OUTPUT OUT;
+			float4 c = tex2D(inputSampler, IN.tex0);
+			float3 c2 = tex3D(lutSampler, c.rgb+halfTexSize).rgb;
+			OUT.color = float4(c2, c.a);
+			return OUT;
+		}
+	]]></code>
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

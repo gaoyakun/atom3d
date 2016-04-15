@@ -1,0 +1,465 @@
+<?xml version="1.0"?>
+<material auto="1">
+  <include filename="/materials/builtin/deferredrendering.inc"/>
+  <param name="hasVertexColor" type="int" editortype="bool"/>
+  <param name="enableAlphaTest" type="int" editortype="bool"/>
+  <param name="autoTangentFrame" type="int" editortype="bool" default="false"/>
+  <param name="alpharef" type="float" editortype="none"/>
+  <param name="cullmode" type="int" default="1" editortype="e_cullmode"/>
+  <param name="diffuseTexture" type="texture" editortype="none"/>
+  <param name="normalTexture" type="texture" editortype="none"/>
+  <param name="uvScaleOffset" type="float4" default="1,1,0,0" editortype="none"/>
+  <param name="uvRotation" type="float" default="0" editortype="none"/>
+  <param name="diffuseSampler" type="sampler2D">
+    <texture value="$diffuseTexture"/>
+    <filter value="anisotropic"/>
+    <srgb value="true"/>
+  </param>
+  <param name="normalSampler" type="sampler2D">
+    <texture value="$normalTexture"/>
+    <filter value="lll"/>
+  </param>
+  <param name="diffuseColor" type="float4" default="1.0,1.0,1.0,1.0" editortype="color"/>
+  <param name="shininess" type="float" default="64" editortype="none"/>
+  <param name="MVP" type="float4x4" default="$MVP_Matrix" />
+  <param name="worldview" type="float4x4" default="$WorldView_Matrix"/>
+		
+	<code>
+    <![CDATA[
+		struct a2v_nodiffuse
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+      			float3 tangent: TANGENT;
+      			float3 binormal: BINORMAL;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct a2v_nodiffuse_auto_tangent
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct a2v_diffuse
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+			float3 tangent: TANGENT;
+			float3 binormal: BINORMAL;
+			float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct a2v_diffuse_auto_tangent
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+			float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct v2p
+		{
+			float4 position: POSITION;
+			float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+			float3 viewpos: TEXCOORD1;
+			float3 normal: TEXCOORD2;
+			float3 tangent: TEXCOORD3;
+			float3 binormal: TEXCOORD4;
+		};
+		
+		struct v2p_shadowmap
+		{
+			float4 position: POSITION;
+			float2 tex0: TEXCOORD0;
+			float depth: TEXCOORD1;
+		};
+
+		float2 uv_transform (float rotation, float4 scaleoffset, float2 v)
+		{
+			float s;
+			float c;
+			sincos(rotation, s, c);
+			float3 rc1 = float3(c, s, 0.5*(1.0-c-s));
+			float3 rc2 = float3(-s, c, 0.5*(1.0-c+s));
+			float3 uv = float3(v, 1.0);
+			return float2(dot(rc1, uv), dot(rc2, uv))*scaleoffset.xy+scaleoffset.zw;
+		}
+
+		void vs_shadowmap (in a2v_nodiffuse IN, out v2p_shadowmap OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.tex0 = uv_transform(uvRotation, uvScaleOffset, IN.tex0);
+			OUT.depth = OUT.position.z/OUT.position.w;
+		}
+	
+		struct v2p_auto_tangent
+		{
+			float4 position: POSITION;
+			float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+			float3 viewpos: TEXCOORD1;
+			float3 normal: TEXCOORD2;
+			float3 pos: TEXCOORD3;
+		};
+		
+		/*
+		mat3 cotangent_frame( vec3 N, vec3 p, vec2 uv )
+		{
+			// get edge vectors of the pixel triangle
+			vec3 dp1 = dFdx( p );
+			vec3 dp2 = dFdy( p );
+			vec2 duv1 = dFdx( uv );
+    			vec2 duv2 = dFdy( uv );
+ 
+    			// solve the linear system
+    			vec3 dp2perp = cross( dp2, N );
+    			vec3 dp1perp = cross( N, dp1 );
+    			vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    			vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+ 
+			// construct a scale-invariant frame 
+			float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+			return mat3( T * invmax, B * invmax, N );
+		}		
+		*/
+		void compute_tangent_frame (in float3 N, in float3 p, in float2 uv, out float3 T, out float3 B)
+		{
+			float3 dp1 = ddx(p);
+			float3 dp2 = ddy(p);
+			float2 duv1 = ddx(uv);
+			float2 duv2 = ddy(uv);
+      
+			float2x3 M = float2x3(dp1, dp2);
+			T = mul(float2(duv1.x, duv2.x), M);
+			B = mul(float2(duv1.y, duv2.y), M);
+      
+			float maxLength = max(length(T), length(B));
+			T /= maxLength;
+			B /= maxLength;
+		}
+    
+		void vs_nodiffuse (in a2v_nodiffuse IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview).xyz;
+			OUT.diffuse = diffuseColor;
+			OUT.tex0 = uv_transform(uvRotation, uvScaleOffset, IN.tex0);
+			OUT.normal = mul(IN.normal, (float3x3)worldview);
+			OUT.tangent = mul(IN.tangent, (float3x3)worldview);
+			OUT.binormal = mul(IN.binormal, (float3x3)worldview);
+		}
+		
+		void vs_nodiffuse_auto_tangent (in a2v_nodiffuse_auto_tangent IN, out v2p_auto_tangent OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview).xyz;
+			OUT.diffuse = diffuseColor;
+			OUT.tex0 = uv_transform(uvRotation, uvScaleOffset, IN.tex0);
+			OUT.normal = mul(IN.normal, (float3x3)worldview);
+		      	OUT.pos = IN.position.xyz;
+		}
+		
+		void vs_diffuse (in a2v_diffuse IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview).xyz;
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.tex0 = uv_transform(uvRotation, uvScaleOffset, IN.tex0);
+			OUT.normal = mul(IN.normal, (float3x3)worldview);
+			OUT.tangent = mul(IN.tangent, (float3x3)worldview);
+			OUT.binormal = mul(IN.binormal, (float3x3)worldview);
+		}
+		
+		void vs_diffuse_auto_tangent (in a2v_diffuse_auto_tangent IN, out v2p_auto_tangent OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview).xyz;
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.tex0 = uv_transform(uvRotation, uvScaleOffset, IN.tex0);
+			OUT.normal = mul(IN.normal, (float3x3)worldview);
+			OUT.pos = IN.position.xyz;
+		}
+		
+		float3 calc_normal (float2 tex, float3 tangent, float3 binormal, float3 normal)
+		{
+			float3 n = tex2D(normalSampler, tex).xyz * 2.0 - 1.0;
+			float3x3 mat = float3x3(normalize(tangent), normalize(binormal), normalize(normal));
+			return normalize(mul(n, mat));      
+    		}
+    
+		float3 calc_normal_auto_tangent (float2 tex, float3 pos, float3 normal)
+		{
+			float3 n = tex2D(normalSampler, tex).xyz * 2.0 - 1.0;
+			float3 t;
+			float3 b;
+			float3 nrm = normalize(normal);
+			compute_tangent_frame (nrm, pos, tex, t, b);
+			float3x3 mat = float3x3(t, b, nrm);
+			return normalize(mul(n, mat));      
+		}
+    
+		void ps (in v2p IN, out Gbuffer_PSOutput OUT)
+		{
+			resetGbufferLayout (OUT);
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+			float3 normal = calc_normal(IN.tex0, IN.tangent, IN.binormal, IN.normal);
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeRawNormalAndSpecularPower (normal, shininess, OUT);
+		}				
+    
+		float4 ps_shadowmap (in v2p_shadowmap IN): COLOR0
+		{
+			return IN.depth;
+		}
+
+		void ps_auto_tangent (in v2p_auto_tangent IN, out Gbuffer_PSOutput OUT)
+		{
+			resetGbufferLayout (OUT);
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+			float3 normal = calc_normal_auto_tangent(IN.tex0, IN.pos, IN.normal);
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeRawNormalAndSpecularPower (normal, shininess, OUT);
+		}				
+    
+		void ps_alphatest (in v2p IN, out Gbuffer_PSOutput OUT)
+		{
+			resetGbufferLayout (OUT);
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+			clip (color.a - alpharef);
+			float3 normal = calc_normal(IN.tex0, IN.tangent, IN.binormal, IN.normal);
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeRawNormalAndSpecularPower (normal, shininess, OUT);
+		}				
+    
+		float4 ps_alphatest_shadowmap (in v2p_shadowmap IN): COLOR0
+		{
+			float4 color = tex2D(diffuseSampler, IN.tex0);
+			clip (color.a - alpharef);
+			return IN.depth;
+		}
+
+		void ps_alphatest_auto_tangent (in v2p_auto_tangent IN, out Gbuffer_PSOutput OUT)
+		{
+			resetGbufferLayout (OUT);
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+			clip (color.a - alpharef);
+			float3 normal = calc_normal_auto_tangent(IN.tex0, IN.pos, IN.normal);
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeRawNormalAndSpecularPower (normal, shininess, OUT);
+		}				
+    
+    ]]>
+  </code>
+	
+  <effect name="noAlphaTest_noDiffuse" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <eq param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="tangent"/>
+        <stream semantec="binormal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse" target="vs_2_0"/>
+      <pixelshader entry="ps" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaTest_Diffuse" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <eq param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="tangent"/>
+        <stream semantec="binormal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse" target="vs_2_0"/>
+      <pixelshader entry="ps" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaTest_noDiffuse" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <eq param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="tangent"/>
+        <stream semantec="binormal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaTest_Diffuse" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <ne param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <eq param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="tangent"/>
+        <stream semantec="binormal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse" target="vs_2_0"/>
+      <pixelshader entry="ps_alphatest" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaTest_noDiffuse_autoTangent" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <ne param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse_auto_tangent" target="vs_3_0"/>
+      <pixelshader entry="ps_auto_tangent" target="ps_3_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaTest_Diffuse_autoTangent" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <ne param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse_auto_tangent" target="vs_3_0"/>
+      <pixelshader entry="ps_auto_tangent" target="ps_3_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaTest_noDiffuse_autoTangent" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <ne param="enableAlphaTest" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+      <ne param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_nodiffuse_auto_tangent" target="vs_3_0"/>
+      <pixelshader entry="ps_alphatest_auto_tangent" target="ps_3_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaTest_Diffuse_autoTangent" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <ne param="enableAlphaTest" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+      <ne param="autoTangentFrame" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_diffuse_auto_tangent" target="vs_3_0"/>
+      <pixelshader entry="ps_alphatest_auto_tangent" target="ps_3_0" />
+    </pass>
+  </effect>
+
+  <effect name="noAlphaTest_ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+    <requirements>
+      <eq param="enableAlphaTest" value="0"/>
+    </requirements>
+    <pass>
+    <streamdefine>
+	<stream semantec="position"/>
+	<stream semantec="texcoord0"/>
+    </streamdefine>
+    <rasterizer_state>
+        <cullmode value="$cullmode"/>
+    </rasterizer_state>
+    <vertexshader entry="vs_shadowmap" target="vs_2_0"/>
+    <pixelshader entry="ps_shadowmap" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="AlphaTest_ShadowMap" scheme="shadowmap" schemelayer="ShadowMapGen">
+    <requirements>
+      <ne param="enableAlphaTest" value="0"/>
+    </requirements>
+    <pass>
+    <streamdefine>
+	<stream semantec="position"/>
+	<stream semantec="texcoord0"/>
+    </streamdefine>
+    <rasterizer_state>
+        <cullmode value="$cullmode"/>
+    </rasterizer_state>
+    <vertexshader entry="vs_shadowmap" target="vs_2_0"/>
+    <pixelshader entry="ps_alphatest_shadowmap" target="ps_2_0" />
+    </pass>
+  </effect>
+
+</material>
+

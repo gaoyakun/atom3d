@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="lln"/>
+		<texture value="$inputTexture"/>
+	</param>
+	<code>
+          <![CDATA[
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		
+		VS_OUTPUT vs(in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			OUT.position = mul(float4(IN.position, 1.0), MVP);
+			OUT.tex0 = IN.tex0;
+			return OUT;
+		}
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float4 vSample = tex2D(inputSampler,IN.tex0);
+			float depth = tex2D(Gbuffer_DepthSampler, IN.tex0).r;
+			//clip( 0.9 - depth );
+			
+			vSample.rgb = depth < 0.99 ? vSample.rgb : 0.0;
+			vSample.a = depth < 0.99 ? 1.0 : 0.0;
+			
+			return vSample;
+		}
+		
+	]]></code>
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

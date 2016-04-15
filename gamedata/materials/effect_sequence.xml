@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<material core="/materials/effect_sequence.mat">
+	<Param name="frameParams" type="vector4" value="6,0.16667,0.2,0"/>
+</material>

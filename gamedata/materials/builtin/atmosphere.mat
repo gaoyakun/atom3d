@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<material auto="1">
+	<include filename="/materials/builtin/atmosphere.inc"/>
+	<code><![CDATA[
+		void RenderSkyVS(in a2v IN, out v2p OUT)
+		{
+			float3 v3Pos = IN.Position.xyz * fSkydomeRadius;
+			OUT.Position = mul(IN.Position, WorldViewProj);
+			//v3Pos.y = max(v3Pos.y, fCameraHeight);
+			float3 direction = v3CameraPos.xyz - v3Pos;
+			float cos = dot(v3LightDir.xyz, normalize(direction));
+			float rayleighPhase = 0.75*(1.0+cos*cos);
+			OUT.RayleighColor.rgb = IN.Diffuse.rgb * rayleighPhase * (v3InvWaveLength.xyz * KrESun);
+			OUT.MieColor.rgb = IN.Diffuse.rgb * KmESun;
+			OUT.Direction = direction;
+		}
+		p2c RenderSkyPS(in v2p IN)
+		{
+			p2c result;
+			float cos = dot(v3LightDir.xyz, normalize(IN.Direction));
+			float miePhase = g.z*(1.0f + cos*cos) / pow(g.w - g.x * cos, 1.5f);
+			float3 color = IN.RayleighColor + miePhase * IN.MieColor;
+			result.color.rgb = color;//1 - exp(-fExposure * color);
+			result.color.a = 1.0;
+			result.depth = 1.0;
+			return result;
+		}
+	]]></code>
+	<effect name="default" scheme="deferred" schemelayer="postshading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="color0" />
+			</streamdefine>
+			<depth_state>
+				<zfunc value="equal" />
+				<zwrite value="false" />
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none" />
+			</rasterizer_state>
+			<vertexshader entry="RenderSkyVS" target="vs_2_0" />
+			<pixelshader entry="RenderSkyPS" target="ps_2_0" />
+		</pass>														
+	</effect>														
+</material>	

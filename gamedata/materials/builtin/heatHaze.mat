@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="invScreenSize" type="float4"/>
+	<param name="Time" type="float" default="$TimeInSecond" />
+	<param name="animCoeffs" type="float4" default="0.00024, 0.0002, 0.05, 0.02" editortype="none" />
+	<param name="perturbScale" type="float4" />
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$inputTexture"/>
+	</param>
+	<param name="perturbTexture" type="texture"/>
+	<param name="perturbSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+		<texture value="$perturbTexture"/>
+	</param>
+	<code><![CDATA[
+				
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 HPosition    : POSITION;
+			float2 baseTC       : TEXCOORD0;
+			float4 perturbTC	: TEXCOORD1;
+		};
+		
+		VS_OUTPUT vs (in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			
+			OUT.HPosition = mul(float4(IN.position, 1.0), MVP);
+			
+			OUT.baseTC = IN.tex0;
+			
+			float timefactor = Time * perturbScale.z;
+			float4 vAnimParams = float4( timefactor, -timefactor, timefactor, -timefactor );
+			OUT.perturbTC = OUT.baseTC.xyxy * perturbScale.wwww + vAnimParams.xxyy;
+			
+			return OUT;
+		}
+		
+		float4 SiGrowablePoissonDisc13FilterRGB(sampler2D tSource, float2 texCoord, float2 pixelSize, float discRadius)
+		{
+			float2	poisson[12] = 	{	float2(-0.326212f, -0.40581f),
+										float2(-0.840144f, -0.07358f),
+										float2(-0.695914f, 0.457137f),
+										float2(-0.203345f, 0.620716f),
+										float2(0.96234f, -0.194983f),
+										float2(0.473434f, -0.480026f),
+										float2(0.519456f, 0.767022f),
+										float2(0.185461f, -0.893124f),
+										float2(0.507431f, 0.064425f),
+										float2(0.89642f, 0.412458f),
+										float2(-0.32194f, -0.932615f),
+										float2(-0.791559f, -0.59771f)
+									};
+									
+			// Center tap
+			float4 center = tex2D (tSource, texCoord);
+			float2 coord = texCoord.xy;
+			
+			float4 cOut = center;
+			
+			for(int tap = 0; tap < 12; tap++)
+			{
+				coord = texCoord.xy + ( pixelSize * poisson[tap] * discRadius);
+				
+				// Sample pixel
+				cOut += tex2D(tSource, coord);
+			}
+		
+			return float4( cOut.rgb / 13.0f, center.a );
+		}
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float2 screenCoord = IN.baseTC.xy;
+		
+			// fetch from perturbation map with scrolling texture coords
+			float3 vPerturb0 = tex2D( perturbSampler, IN.perturbTC.xy ) * 2.0 - 1.0;
+			float3 vPerturb1 = tex2D( perturbSampler, IN.perturbTC.zw ) * 2.0 - 1.0;
+			
+			// average perturbation vectors
+			float2 offset = (vPerturb0.xy + vPerturb1.xy) * 0.5f;
+			
+			// get distortion weight from renderable texture (stored in alpha)
+			float depth = getDepth(screenCoord);
+			float cDistWeight = ( depth == 1.0f ) ? 0 : saturate( linearizeDepth( depth ) * perturbScale.y ) ;			// [0 - 1]
+			
+			float cDistWeight_org = cDistWeight;
+			
+			// square distortion weight
+			cDistWeight *= cDistWeight;
+			
+			//cDistWeight = 1;
+			
+			// compute distorted texture coords
+			offset.xy = ( ( offset.xy * cDistWeight ) * perturbScale.x * invScreenSize.xy ) + screenCoord;
+			
+			// fetch the distorted color
+			float4 o;
+			o = SiGrowablePoissonDisc13FilterRGB( inputSampler, offset, invScreenSize.xy, cDistWeight_org );
+			
+			return o;
+		}
+		
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

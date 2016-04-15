@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<param name="heightTexture" type="texture"/>
+	<param name="heightSampler" type="sampler2D">
+		<texture value="$heightTexture"/>
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="false"/>
+	</param>
+
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+
+		struct v2p
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+
+		v2p vs (in a2v IN)
+		{
+			v2p OUT;
+			OUT.position = IN.position;
+			OUT.uv = IN.uv;
+			return OUT;
+		}
+		
+		float4 ps (in v2p IN) : COLOR
+		{
+			float height = tex2D(heightSampler, IN.uv).r;
+			return float4(height, height, height, 1);
+		}
+
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0"/>	
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0" />
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>
+

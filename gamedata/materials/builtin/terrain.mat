@@ -1,0 +1,1021 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<material auto="1">
+  <include filename="/materials/builtin/deferredrendering.inc"/>
+  
+  <include filename="/materials/builtin/forward/forwardrendering.inc" />
+  
+  <param name="numDetails" type="int"/>
+  <param name="drawDetail" type="int"/>
+  <param name="mvp" type="float4x4" default="$MVP_Matrix"/>
+  <param name="modelViewMatrix" type="float4x4" default="$WorldView_Matrix"/>
+  <param name="offsetScale" type="float4"/>
+  <param name="uvScale" type="float4"/>
+  <param name="ddd" type="float4" default="1,1,1,1"/>
+  <param name="normalMap" type="texture"/>
+  <param name="normalSampler" type="sampler2D">
+    <texture value="$normalMap"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+  </param>
+  <param name="baseMap" type="texture"/>
+  <param name="baseSampler" type="sampler2D">
+    <texture value="$baseMap"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+    <srgb value="true"/>
+  </param>
+  <param name="detail0" type="texture"/>
+  <param name="detail1" type="texture"/>
+  <param name="detail2" type="texture"/>
+  <param name="detail3" type="texture"/>
+  <param name="detail4" type="texture"/>
+  <param name="detail5" type="texture"/>
+  <param name="detail6" type="texture"/>
+  <param name="detail7" type="texture"/>
+  <param name="detail8" type="texture"/>
+  <param name="detail9" type="texture"/>
+  <param name="detail10" type="texture"/>
+  <param name="detail11" type="texture"/>
+  <param name="alpha0" type="texture"/>
+  <param name="alpha1" type="texture"/>
+  <param name="alpha2" type="texture"/>
+  <param name="detail0_uvscale" type="float4"/>
+  <param name="detail1_uvscale" type="float4"/>
+  <param name="detail2_uvscale" type="float4"/>
+  <param name="detail3_uvscale" type="float4"/>
+  <param name="detail4_uvscale" type="float4"/>
+  <param name="detail5_uvscale" type="float4"/>
+  <param name="detail6_uvscale" type="float4"/>
+  <param name="detail7_uvscale" type="float4"/>
+  <param name="detail8_uvscale" type="float4"/>
+  <param name="detail9_uvscale" type="float4"/>
+  <param name="detail10_uvscale" type="float4"/>
+  <param name="detail11_uvscale" type="float4"/>
+  <param name="detailSampler0" type="sampler2D">
+    <texture value="$detail0"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler1" type="sampler2D">
+    <texture value="$detail1"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler2" type="sampler2D">
+    <texture value="$detail2"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler3" type="sampler2D">
+    <texture value="$detail3"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler4" type="sampler2D">
+    <texture value="$detail4"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler5" type="sampler2D">
+    <texture value="$detail5"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler6" type="sampler2D">
+    <texture value="$detail6"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler7" type="sampler2D">
+    <texture value="$detail7"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler8" type="sampler2D">
+    <texture value="$detail8"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler9" type="sampler2D">
+    <texture value="$detail9"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler10" type="sampler2D">
+    <texture value="$detail10"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="detailSampler11" type="sampler2D">
+    <texture value="$detail11"/>
+    <filter value="anisotropic"/>
+    <addressu value="wrap"/>
+    <addressv value="wrap"/>
+    <srgb value="true"/>
+	<lodbias value="-1"/>
+  </param>
+  <param name="alphaSampler0" type="sampler2D">
+    <texture value="$alpha0"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+  </param>
+  <param name="alphaSampler1" type="sampler2D">
+    <texture value="$alpha1"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+  </param>
+  <param name="alphaSampler2" type="sampler2D">
+    <texture value="$alpha2"/>
+    <filter value="llp"/>
+    <addressu value="clamp"/>
+    <addressv value="clamp"/>
+  </param>
+  <code>
+    <![CDATA[
+      struct TerrainVSOutput
+      {
+        float4 position : POSITION;
+        float2 tex0 : TEXCOORD0;
+      };
+      struct TerrainVSOutputShadowMap
+      {
+	      float4 position: POSITION;
+	      float depth: TEXCOORD0;
+      };
+      void storeNormal (in float2 tex, inout Gbuffer_PSOutput output)
+      {
+#if 0
+        float3 normal = 2*tex2D(normalSampler, tex).xyz-1.0;
+#else
+        float3 normal = mul(2*tex2D(normalSampler, tex).xyz-1.0, (float3x3)modelViewMatrix);
+#endif
+        storeRawNormalAndSpecularPower (normal, 64.0, output);
+      }
+      TerrainVSOutputShadowMap TerrainVSShadowMap(float4 pos: POSITION, float tex: TEXCOORD0)
+      {
+	      TerrainVSOutputShadowMap output;
+	      float4 posObj;
+	      posObj.xz = pos.xz * offsetScale.xz + offsetScale.yw;
+	      posObj.y = tex;
+	      posObj.w = 1.0;
+	      output.position = mul (posObj, mvp);
+	      output.depth = output.position.z/output.position.w;
+	      return output;
+      }
+      TerrainVSOutput TerrainVSNonDetail(float4 pos: POSITION, float tex: TEXCOORD0)
+      {
+        TerrainVSOutput output;
+        float4 posObj;
+        posObj.xz = pos.xz * offsetScale.xz +offsetScale.yw;
+        posObj.y = tex;
+        posObj.w = 1.0;
+        output.position = mul(posObj, mvp);
+        output.tex0 = posObj.xz * uvScale;
+        return output;
+      }
+      float4 TerrainPSUVNormal (in TerrainVSOutput IN): COLOR0
+      {
+        float3 normal = mul(2*tex2D(normalSampler, IN.tex0).xyz-1.0, (float3x3)modelViewMatrix);
+        float2 t = IN.tex0;
+        float2 n = normal.xz;
+        return float4(t, n);
+      }
+      float4 TerrainPSShadowMap (in TerrainVSOutputShadowMap IN): COLOR0
+      {
+	      return IN.depth;
+      }
+      Gbuffer_PSOutput TerrainPSNonDetail(	in TerrainVSOutput IN
+										#if SUPPORT_SM30 && USE_Albedo_Encode
+											,in float4 screenCoord : VPOS	// wangjian added
+										#endif
+										)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 color = tex2D(baseSampler, IN.tex0);
+        storeNormal (IN.tex0, output);
+		
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output );
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      TerrainVSOutput TerrainVS(float4 pos: POSITION, float tex: TEXCOORD0)
+      {
+        TerrainVSOutput output;
+        float4 posObj;
+        posObj.xz = pos.xz * offsetScale.xz +offsetScale.yw;
+        posObj.y = tex;
+        posObj.w = 1.0;
+        output.position = mul(posObj, mvp);
+        output.tex0 = posObj.xz * uvScale;
+        return output;
+      }
+      Gbuffer_PSOutput TerrainPS1	(	in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+									)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 color = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS2(	in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+									)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor = tex2D(alphaSampler0, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color = color0*factor.b+color1*factor.g;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS3(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor = tex2D(alphaSampler0, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color = color0*factor.b+color1*factor.g+color2*factor.r;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS4(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor = tex2D(alphaSampler0, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color = color0*factor.b+color1*factor.g+color2*factor.r+color3*factor.a;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS5(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS6(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+									)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color = color5*factor1.g;
+		color += color4*factor1.b;
+		color += color0*factor0.b;
+		color += color1*factor0.g;
+		color += color2*factor0.r;
+		color += color3*factor0.a;//color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.gggg;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS7(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS8(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+        float4 color7 = tex2D(detailSampler7, IN.tex0*detail7_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r+color7*factor1.a;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS9(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 factor2 = tex2D(alphaSampler2, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+        float4 color7 = tex2D(detailSampler7, IN.tex0*detail7_uvscale);
+        float4 color8 = tex2D(detailSampler8, IN.tex0*detail8_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r+color7*factor1.a+color8*factor2.b;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS10(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+								)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 factor2 = tex2D(alphaSampler2, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+        float4 color7 = tex2D(detailSampler7, IN.tex0*detail7_uvscale);
+        float4 color8 = tex2D(detailSampler8, IN.tex0*detail8_uvscale);
+        float4 color9 = tex2D(detailSampler9, IN.tex0*detail9_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r+color7*factor1.a+color8*factor2.b+color9*factor2.g;
+        storeNormal (IN.tex0, output);
+		
+        //--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS11(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+									)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 factor2 = tex2D(alphaSampler2, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+        float4 color7 = tex2D(detailSampler7, IN.tex0*detail7_uvscale);
+        float4 color8 = tex2D(detailSampler8, IN.tex0*detail8_uvscale);
+        float4 color9 = tex2D(detailSampler9, IN.tex0*detail9_uvscale);
+        float4 color10 = tex2D(detailSampler10, IN.tex0*detail10_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r+color7*factor1.a+color8*factor2.b+color9*factor2.g+color10*factor2.r;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+      Gbuffer_PSOutput TerrainPS12(in TerrainVSOutput IN
+									#if SUPPORT_SM30 && USE_Albedo_Encode
+										,in float4 screenCoord : VPOS	// wangjian added
+									#endif
+									)
+      {
+        Gbuffer_PSOutput output;
+        resetGbufferLayout (output);
+        float4 factor0 = tex2D(alphaSampler0, IN.tex0);
+        float4 factor1 = tex2D(alphaSampler1, IN.tex0);
+        float4 factor2 = tex2D(alphaSampler2, IN.tex0);
+        float4 color0 = tex2D(detailSampler0, IN.tex0*detail0_uvscale);
+        float4 color1 = tex2D(detailSampler1, IN.tex0*detail1_uvscale);
+        float4 color2 = tex2D(detailSampler2, IN.tex0*detail2_uvscale);
+        float4 color3 = tex2D(detailSampler3, IN.tex0*detail3_uvscale);
+        float4 color4 = tex2D(detailSampler4, IN.tex0*detail4_uvscale);
+        float4 color5 = tex2D(detailSampler5, IN.tex0*detail5_uvscale);
+        float4 color6 = tex2D(detailSampler6, IN.tex0*detail6_uvscale);
+        float4 color7 = tex2D(detailSampler7, IN.tex0*detail7_uvscale);
+        float4 color8 = tex2D(detailSampler8, IN.tex0*detail8_uvscale);
+        float4 color9 = tex2D(detailSampler9, IN.tex0*detail9_uvscale);
+        float4 color10 = tex2D(detailSampler10, IN.tex0*detail10_uvscale);
+        float4 color11 = tex2D(detailSampler11, IN.tex0*detail11_uvscale);
+        float4 color = color0*factor0.b+color1*factor0.g+color2*factor0.r+color3*factor0.a+color4*factor1.b+color5*factor1.g+color6*factor1.r+color7*factor1.a+color8*factor2.b+color9*factor2.g+color10*factor2.r+color11*factor2.a;
+        storeNormal (IN.tex0, output);
+        
+		//--- wangjian modified ---//
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output, screenCoord );
+		#else
+			storeRawAlbedoAndGlossness (color.rgb,0.f, output);
+		#endif
+		//-------------------------//
+		
+        return output;        
+      }
+	  
+	  /////////////////////////////////////////////////////////////////////////////
+	  
+	  
+	  struct TerrainVSOutput_fs
+      {
+        float4 position : POSITION;
+        float2 tex0 	: TEXCOORD0;
+		float4 fog 		: TEXCOORD1;
+      };
+      
+      TerrainVSOutput_fs TerrainVSNonDetail_fs(float4 pos: POSITION, float tex: TEXCOORD0)
+      {
+        TerrainVSOutput_fs output;
+        float4 posObj;
+        posObj.xz = pos.xz * offsetScale.xz +offsetScale.yw;
+        posObj.y = tex;
+        posObj.w = 1.0;
+        output.position = mul(posObj, mvp);
+        output.tex0 	= posObj.xz * uvScale;
+		output.fog		= CalcFog(output.position.w);
+		
+        return output;
+      }
+      
+      float4 TerrainPSNonDetail_fs(in TerrainVSOutput_fs IN) : COLOR0
+      {
+        float4 color = tex2D(baseSampler, IN.tex0);
+        float3 normal = mul(2*tex2D(normalSampler, IN.tex0).xyz-1.0, (float3x3)modelViewMatrix);
+		
+		float4 lighting = AmbientLighting();
+		lighting += DiffuseLighting(normalize(normal),1);
+		color *= lighting;
+		color.a = 1;
+		
+		ApplyFog( color, IN.fog );
+		
+        return color;  
+      }
+	  
+    ]]>
+  </code>
+  <effect name="nondetail" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <depth_state>
+        <zfunc value="lessequal"/>
+        <zwrite value="true"/>
+      </depth_state>
+      <vertexshader entry="TerrainVSNonDetail" target="vs_2_0"/>
+      <pixelshader entry="TerrainPSNonDetail" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail1" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="1"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS1" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail2" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="2"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS2" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail3" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="3"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS3" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail4" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="4"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS4" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail5" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="5"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS5" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail6" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="6"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS6" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail7" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="7"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS7" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail8" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="8"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS8" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail9" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="9"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS9" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail10" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="10"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS10" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail11" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="11"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS11" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="detail12" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="numDetails" value="12"/>
+      <ne param="drawDetail" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <vertexshader entry="TerrainVS" target="vs_2_0"/>
+      <pixelshader entry="TerrainPS12" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="shadowmap" scheme="shadowmap" schemelayer="ShadowMapGen">
+     <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <rasterizer_state>
+        <cullmode value="back" />
+      </rasterizer_state>
+      <vertexshader entry="TerrainVSShadowMap" target="vs_2_0"/>
+      <pixelshader entry="TerrainPSShadowMap" target="ps_2_0"/>
+     </pass>
+  </effect>
+  <effect name="uvnormal" scheme="editor" schemelayer="TerrainShadowMapGen">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <vertexshader entry="TerrainVSNonDetail" target="vs_2_0"/>
+      <pixelshader entry="TerrainPSUVNormal" target="ps_2_0"/>
+    </pass>
+  </effect>
+  
+  
+  
+  <effect name="nondetail_fs" scheme="custom" schemelayer="Solid">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float"/>
+      </streamdefine>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="128"/>
+        <writemask value="128"/>
+        <ref value="128"/>
+        <func_front value="always"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="replace"/>
+      </stencil_state>
+      <depth_state>
+        <zfunc value="lessequal"/>
+        <zwrite value="true"/>
+      </depth_state>
+      <vertexshader entry="TerrainVSNonDetail_fs" target="vs_2_0"/>
+      <pixelshader entry="TerrainPSNonDetail_fs" target="ps_2_0"/>
+    </pass>
+  </effect>
+  
+</material>

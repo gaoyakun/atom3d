@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<material autoscheme="1">										
+	<code><![CDATA[
+		struct v2p
+		{
+			float4 position : POSITION0;
+		};
+		float4 ps (in v2p IN) : COLOR0
+		{
+			return float4(1.f,1.f,1.f,1.f);
+		}
+	]]></code>						
+	<effect name="default" scheme="deferred" schemelayer="forward">
+		<pass>														
+			<streamdefine>											
+				<stream semantec="position"/>	
+			</streamdefine>											
+			<rasterizer_state>										
+				<cullmode value="none" />					
+			</rasterizer_state>			
+			<pixelshader entry="ps" target="ps_2_0" />		
+		</pass>														
+	</effect>														
+</material>	

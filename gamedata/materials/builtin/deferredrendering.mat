@@ -1,0 +1,791 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="mvp" type="float4x4" default="$ViewProjection_Matrix" />
+	<param name="wvp" type="float4x4" default="$MVP_Matrix" />
+	<param name="invView" type="float4x4" default="$Inv_View_Matrix" />
+	<param name="view" type="float4x4" />
+	<param name="ambient" type="float4" default="$SceneAmbient" />
+	<param name="lightColor" type="float4" default="$Deferred_LightColor"/>
+	<param name="lightDir" type="float4" default="$Deferred_LightDir"/>
+	<param name="srcBlend" type="int" default="5"/>
+    <param name="destBlend" type="int" default="6"/>
+	<param name="TransMaskTexture" type="texture" default="/textures/soft_edge_mask.png"/>
+	<param name="TransMaskSampler" type="sampler2D" >
+		<filter value="lln"/>
+		<addressu value="border"/>
+		<addressv value="border"/>
+		<bordercolor value="1,1,1,1"/>
+		<texture value="$TransMaskTexture"/>
+		<srgb value="false" />
+	</param>
+	<code>
+    <![CDATA[
+		struct OmniLight_VSInput
+		{
+		  float3 position : POSITION;
+		  float3 omniParams : TEXCOORD0;
+		  float3 omniAtt : TEXCOORD1;
+		};
+		struct OmniLight_VSOutput0
+		{
+		  float4 position : POSITION;
+		};
+		struct OmniLight_VSOutput
+		{
+		  float4 position : POSITION;
+		  float3 lightPos : TEXCOORD0;
+		  float3 lightAtt : TEXCOORD1;
+		  float3 eyePos : TEXCOORD2;
+		  float4 uv : TEXCOORD3;
+		};
+		struct DirectionalLight_VSInput
+		{
+		  float3 position : POSITION;
+		  float2 uv : TEXCOORD0;
+		};
+		struct DirectionalLight_VSOutput
+		{
+		  float4 position : POSITION;
+		  float2 uv : TEXCOORD0;
+		  float3 eyedir : TEXCOORD1;
+		};
+		struct AmbientLight_VSInput
+		{
+		  float3 position : POSITION;
+		  float2 uv : TEXCOORD0;
+		};
+		struct AmbientLight_VSOutput
+		{
+		  float4 position : POSITION;
+		  float2 uv : TEXCOORD0;
+		};
+		struct PS_OUTPUT
+		{
+		  float4 color : COLOR0;
+		};
+		float fresnel_term (float3 light_vec, float3 half_vec, float spec)
+		{
+		  float t = saturate(dot(light_vec, half_vec));
+		  return spec + (1-spec)*pow(1-t, 5);
+		}
+		float specular_normalize_factor (float roughness)
+		{
+		  return (roughness+2.0)/8.0;
+		}
+		float roughness_term (float3 half_vec, float3 normal, float roughness)
+		{
+			// wangjian modified : save 1 alu
+		#if 1
+			return exp2 ( saturate( dot( half_vec, normal ) ) * roughness - roughness );
+		#else
+		  return pow (saturate(dot(half_vec, normal)), roughness);
+		#endif
+		}
+		float roughness_term (float spec, float3 light_vec, float3 half_vec, float3 normal, float roughness)
+		{
+		  return pow (saturate(dot(half_vec, normal)), roughness) * fresnel_term (light_vec, half_vec, spec);
+		}
+		float specular_term (float3 half_vec, float3 normal, float roughness)
+		{
+		  return specular_normalize_factor(roughness)*roughness_term(half_vec, normal, roughness);
+		}
+		float specular_term (float spec, float3 light_vec, float3 half_vec, float3 normal, float roughness)
+		{
+		  return specular_normalize_factor(roughness)*roughness_term(spec, light_vec, half_vec, normal, roughness);
+		}
+		float3 calc_brdf_diffuse_only (float3 diff, float3 l, float3 n)
+		{
+		  return saturate(diff * dot(n, l));
+		}
+		float3 calc_brdf (float3 diff, float3 spec, float roughness, float3 l, float3 h, float3 n)
+		{
+		  return max((diff + specular_term (spec, l, h, n, roughness)) * dot(n, l), 0);
+		}
+		//--------------------------------- wangjian added for sss -----------------------------------------//
+		float3 calc_sss( float ndotl, float curvature )
+		{
+			return tex2D( SSSBRDFSampler, float2( ndotl, 1.0 - curvature ) ).rgb;
+		}
+			
+		float3 caclTranslucency(in float thickness,
+								in float3 lightDir, 
+								in float3 normal, 
+								in float3 eyeDir,
+								in float distort, 
+								in float power, 
+								in float ambient, 
+								in float attenuation,
+								in float scale)
+		{
+			float3 	vLTLight 	= lightDir + normal * distort;
+		#if 1
+			float  	fLTDot 		= exp2( saturate( dot( eyeDir, -vLTLight ) ) * power - power ) * scale;
+		#else
+			float  	fLTDot 		= pow( saturate( dot( eyeDir, -vLTLight ) ), power ) * scale;
+		#endif
+			float3 	fLT 		= attenuation * ( fLTDot + ambient ) * thickness;
+			
+			return 	fLT;
+		}
+		//-------------------------------------------------------------------------------------------------//
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		
+		OmniLight_VSOutput0 OmniLightVS0 (in OmniLight_VSInput IN)
+		{
+		  OmniLight_VSOutput0 output;
+		  output.position = mul(float4(IN.position, 1.0), mvp);
+		  return output;
+		}
+		PS_OUTPUT OmniLightPS0 (in OmniLight_VSOutput0 IN)
+		{
+		  PS_OUTPUT output;
+		  output.color = float4(1.0, 1.0, 1.0, 1.0);
+		  return output;
+		}
+		OmniLight_VSOutput OmniLightVS (in OmniLight_VSInput IN)
+		{
+		  OmniLight_VSOutput output;
+		  float4 hPos = mul(float4(IN.position, 1.0), mvp);
+		  output.position = hPos;
+		  output.lightPos = mul(float4(IN.omniParams, 1.0), invView).xyz;
+		  output.lightAtt = IN.omniAtt;
+		  output.eyePos = mul(float4(IN.position, 1.0), invView);
+		  output.uv = getTexCoordFromClipSpace (hPos);
+		  return output;
+		}
+	
+		//--- wangjian modified ---//
+		void getPM (	in float2 uv, in float3 eyePos, 
+						out float3 	pos, 
+						out float3 	normal, 
+						out float 	specPower,
+						out float 	halflambertScale	)
+		{
+			pos = getEyePosFromTexCoord (uv, eyePos);
+			//float4 depth = linearizeDepth (getDepth(uv));
+			//pos = eyePos * depth / eyePos.z;
+			normal = getNormalAndSpecularPower ( uv, specPower,	halflambertScale );
+		}
+		//-------------------------//
+		
+		float4 OutputLighting(float4 input)
+		{
+			//if( useHDR )
+			//	return input;
+			
+			return exp2(-input);
+		}
+		
+		PS_OUTPUT OmniLightPS (in OmniLight_VSOutput IN)
+		{
+			PS_OUTPUT output;
+			  
+			float3 eyePos;
+			float3 eyeNormal;
+			
+			float2 uv = IN.uv.xy/IN.uv.w;
+			
+			//--- wangjian modified ---//
+			float  	thickness 		= 0;
+			float 	specPower		= 0;
+			getPM (	uv, IN.eyePos, eyePos, eyeNormal, specPower, thickness );		// thickness is in [-1,1] range
+			float bTranslucent 		= saturate( 1.0 - thickness );					// translucency flag
+			//-------------------------//
+			
+			float3 viewDir 			= -normalize(IN.eyePos);
+			float3 lightvec 		= IN.lightPos.xyz - eyePos;						// eye space light dir
+			float lightDist = length (lightvec);
+			lightvec 				/= lightDist;									// normalize light dir
+		  
+		#if 1
+			float atten 			= ( 1.0 / dot( IN.lightAtt.xyz, float3( 1.0, lightDist, lightDist * lightDist ) ) );
+		#else	
+			float atten 			= GetPointLightAttenuation( lightDist, IN.lightPos.w );
+		#endif
+		  
+			//--- wangjian modified ---//
+			
+			// use half lambert
+			float halflambertFactor = ( 1.0 - bTranslucent * 0.5 );		// translucent : 0.5 / no translucent : 1.0
+		#if 1
+			float NdotL 			= ( saturate( dot(lightvec, eyeNormal.xyz) ) * halflambertFactor + 1.0 - halflambertFactor );
+		#else
+			float NdotL 			= saturate( dot(lightvec, eyeNormal.xyz) );
+		#endif
+			//-------------------------//
+		  
+			float3 half_vec 		= normalize( lightvec + viewDir );
+			float spec 				= roughness_term( half_vec, eyeNormal.xyz, specPower );
+		  
+			////////////// wangjian modified //////
+			
+			float4 diffuseFactor 	= NdotL.xxxx;
+			
+			float sssFactor 		= bTranslucent;
+			float curvature 		= halflambertFactor;
+				float3 brdf_sss = calc_sss( NdotL, curvature );
+			diffuseFactor.xyz 		= lerp( diffuseFactor.xyz, brdf_sss, sssFactor );
+				
+			//////////////////////////////////////
+			
+			float3 lightTranslucent = 0;
+			
+		#if 1
+			lightTranslucent = caclTranslucency(	saturate( -thickness ),
+													lightvec,
+													eyeNormal.xyz,
+													viewDir,
+													0.1,
+													20,
+													0,
+													1,
+													1	);
+		#endif
+		
+			float4 lightvalue 		= 	float4( lightColor.rgb * ( diffuseFactor.xyz + lightTranslucent ), spec * diffuseFactor.w ) * 
+										lightColor.a * atten;
+		
+			output.color = OutputLighting( lightvalue );
+		  
+			return output;
+		}
+	
+		////////////////////////////////////////////////////////////////////////////////////////////
+		
+		DirectionalLight_VSOutput DirectionalLightVS (in DirectionalLight_VSInput IN)
+		{
+			DirectionalLight_VSOutput OUT;
+		  
+			OUT.position = mul(float4(IN.position, 1.0), wvp);
+			OUT.uv = IN.uv;
+			OUT.eyedir = getEyeDirFromClipSpace (OUT.position);
+		  
+			return OUT;
+		}
+		
+		float4 DirectionalLightPS (in DirectionalLight_VSOutput IN) : COLOR0
+		{
+			float3 eyepos = getEyePosFromTexCoord (IN.uv, IN.eyedir);
+		  
+			// use half lambert 
+			float  	thickness 		= 0;
+			float 	specPower		= 0;
+			float3 	normal 			= getNormalAndSpecularPower ( IN.uv, specPower, thickness );
+			float 	bTranslucent 	= saturate( 1.0 - thickness );						// translucency flag
+			
+			float NdotL 			= saturate( dot( lightDir, normal.xyz ) );				
+			
+			float shadowTerm = NdotL > 0.0 ? saturate( tex2D(sunShadowSampler, IN.uv).r ) : 1.0;
+			
+			// 0.5 is tweaked according to game settings
+			float halflambertFactor = 1.0 - bTranslucent * 0.5;			// translucent : 0.5 / no translucent : 1.0
+			
+		#if 0
+			float NdotL_WARP = NdotL * halflambertFactor + 1.0 - halflambertFactor;
+			shadowTerm = min( NdotL_WARP, shadowTerm );
+		#else
+			shadowTerm = min( NdotL, shadowTerm );
+			shadowTerm = shadowTerm * halflambertFactor + 1.0 - halflambertFactor;
+		#endif
+		  
+			//--- wangjian modified ---//
+			
+			float3 	eyeDir 			= -normalize(eyepos);
+			float3 	half_vec 		= normalize(lightDir+eyeDir);
+			float 	spec 			= roughness_term( half_vec, normal.xyz, specPower );
+			
+			float4 diffuseFactor = shadowTerm.xxxx;
+			
+			float sssFactor 		= bTranslucent;										// ceil( 1.0 - halflambertScale );
+			float curvature 		= halflambertFactor;
+				float3 brdf_sss = calc_sss( shadowTerm, curvature );
+			diffuseFactor.xyz 		= lerp( diffuseFactor.xyz, brdf_sss, sssFactor );
+			
+			float3 lightTranslucent = 0;
+			
+		#if 1
+			lightTranslucent = caclTranslucency(	saturate(-thickness),
+													lightDir,
+													normal.xyz,
+													eyeDir,
+													0.02,
+													5,
+													0,
+													1,
+													1	);
+		#endif
+			// note : the specular is also influcenced by diffuse factor				
+			float4 lightvalue 		= float4( lightColor.rgb * ( diffuseFactor.xyz + lightTranslucent ), spec * diffuseFactor.w ) * lightColor.a;
+			
+			return OutputLighting( lightvalue );
+			//-------------------------//
+		}
+		
+		////////////////////////////////////////////////////////////////////////////////////////
+		
+		AmbientLight_VSOutput ambientVS (in AmbientLight_VSInput IN)
+		{
+			AmbientLight_VSOutput OUT;
+		  
+			OUT.position 	= mul(float4(IN.position, 1.0), wvp);
+			OUT.uv 			= IN.uv;
+		  
+			return OUT;
+		}
+		
+		float4 ambientPS (in AmbientLight_VSOutput IN) : COLOR0
+		{
+			float 	halflambertScale 	= 0;
+			float 	specPower 			= 0;
+			float3 	normal 				= getNormalAndSpecularPower ( IN.uv, specPower, halflambertScale );
+			float3 	normal_world 		= mul(normal.xyz, (float3x3)view);
+			float l = saturate(normal_world.y);
+			float4 	lightvalue 			= float4( ambient.rgb * ( l * 0.5 + 0.5 ), 0 );
+			
+			return OutputLighting(lightvalue);
+		}
+		
+
+		//--- wangjian modified ---//
+		struct Shading_VSInput
+		{
+		  float3 position : POSITION;
+		  float2 uv : TEXCOORD0;
+		};
+		struct Shading_VSOutput
+		{
+		  float4 position : POSITION;
+		  float2 uv : TEXCOORD0;
+		};
+		Shading_VSOutput shadingVS (in Shading_VSInput IN)
+		{
+		  Shading_VSOutput OUT;
+		  
+		  OUT.position = mul(float4(IN.position, 1.0), wvp);
+		  OUT.uv = IN.uv;
+		  return OUT;
+		}
+		float4 shadingPS(	float2 texcoord: TEXCOORD0
+							#if SUPPORT_SM30 && USE_Albedo_Encode
+							,float4 screenCoord : VPOS
+							#endif
+						) : COLOR0
+		{
+		
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			float4 sc = screenCoord;
+		#else 
+			float4 sc = float4(0,0,0,0);
+		#endif
+			
+			return shade( texcoord, sc );
+		}
+	
+		float4 shadingLDR_PS	(	float2 texcoord: TEXCOORD0
+								#if SUPPORT_SM30 && USE_Albedo_Encode
+									,float4 screenCoord : VPOS
+								#endif
+								) : COLOR0
+		{
+		
+		#if SUPPORT_SM30 && USE_Albedo_Encode
+			float4 sc = screenCoord;
+		#else 
+			float4 sc = float4(0,0,0,0);
+		#endif
+		
+			return shade_LDR( texcoord, sc );
+		}
+	
+		//-------------------------//
+	
+	
+		float4 framebuffer_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			return float4(tex2D(FinalResultSampler, uv).rgb, 1.0);
+		}
+		float4 framebuffer_transparent_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			//--- wangjian modified ---//
+		#if 0
+			float z = getDepth (texcoord);
+			clip (1.0 - z);
+			return float4(tex2D(FinalResultSampler, texcoord).rgb, 1.0);
+		#else
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			float4 color = tex2D(FinalResultSampler, uv);
+			float mask = tex2D(TransMaskSampler, texcoord).a;
+			return float4( color.rgb, color.a * ( 1.0-mask ) );
+		#endif
+		}
+		float4 framebuffer_expand_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			//--- wangjian modified ---//
+			//return float4(tex2D(FinalResultSampler, texcoord).rgb*0.5+0.5, 1.0);
+			
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			
+			float3 normal = tex2D(FinalResultSampler, uv).rgb;
+			normal = decodeNormal( float3( normal.rg, 0 ) );
+			return float4( normal*0.5+0.5,1);
+			//-------------------------//
+		}
+		float4 framebuffer_srgb_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+		
+		#if 1
+			float3 c = tex2D(FinalResultSampler, uv).rgb;
+		#else
+			float3 c = tex2D(FinalResultSampler, uv).aaa;
+		#endif
+		
+			//c /= 64;
+			c = pow(c, 1.0/2.2);
+			return float4(c, 1.0);
+		}
+		float4 framebuffer_depth_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			float d = pow(tex2D(FinalResultSampler, uv).r, 2.0);
+			return float4(d, d, d, 1.0);
+		}
+		//--- wangjian added ---//
+		float4 framebuffer_unpackHalfLambert_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+		#if 0
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			float half_lambert = tex2D(FinalResultSampler, uv).a;
+			half_lambert = abs( half_lambert * 2 - 1 );
+			return float4(half_lambert, half_lambert, half_lambert, 1.0);
+		#else
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			float thickness = tex2D(FinalResultSampler, uv).a;
+			thickness = ( thickness * 2 - 1 );
+			thickness = saturate( -thickness );
+			return float4(thickness, thickness, thickness, 1.0);
+		#endif
+		}
+		float4 framebuffer_one_pixel (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			float lumin = tex2D(FinalResultSampler, float2(0.5,0.5)).r;
+			lumin = lerp(0.2f, lumin, 0.5f);
+			float adapted_lum_test = saturate( 3 / (max(0.1f, 1+10*lumin)) );
+			if( adapted_lum_test < 0.00001f )
+				return float4(1,0,0,1.0);
+			return float4(adapted_lum_test,adapted_lum_test,adapted_lum_test, 1.0);
+		}
+		float4 framebuffer_lightbufferLDR_blit (float2 texcoord: TEXCOORD0) : COLOR0
+		{
+			float2 uv = texcoord * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			float4 lightinfo = -log2( tex2D(FinalResultSampler, uv) );
+			lightinfo /= 32;
+			lightinfo = pow(lightinfo, 1.0/2.2);
+			return lightinfo;
+		}
+		//----------------------//
+    ]]>
+  </code>
+	<effect name="ambient">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="greater" />
+				<zwrite value="false" />
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="ambientVS" target="vs_2_0"/>
+			<pixelshader entry="ambientPS" target="ps_2_0"/>
+		</pass>														
+	</effect>
+  <effect name="directional">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <depth_state>
+        <zfunc value="greater"/>
+        <zwrite value="false"/>
+      </depth_state>
+      <rasterizer_state>
+        <cullmode value="none"/>
+      </rasterizer_state>
+      <alphablend_state>
+        <enable value="true"/>
+        <srcblend value="$srcBlend"/>
+        <destblend value="$destBlend"/>
+      </alphablend_state>
+      <vertexshader entry="DirectionalLightVS" target="vs_2_0"/>
+      <pixelshader entry="DirectionalLightPS" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="omni">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="texcoord0" type="float3"/>
+        <stream semantec="texcoord1" type="float3"/>
+        <stream semantec="texcoord2" type="float3"/>
+        <stream semantec="texcoord3" type="float4"/>
+      </streamdefine>
+      <depth_state>
+        <zfunc value="lessequal"/>
+        <zwrite value="false"/>
+      </depth_state>
+      <rasterizer_state>
+        <cullmode value="back"/>
+      </rasterizer_state>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="63"/>
+        <writemask value="63"/>
+        <ref value="0"/>
+        <func_front value="equal"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="inc_wrap"/>
+        <passop_front value="keep"/>
+      </stencil_state>
+      <colorwrite_state>
+        <red value="false"/>
+        <green value="false"/>
+        <blue value="false"/>
+        <alpha value="false"/>
+      </colorwrite_state>
+      <vertexshader entry="OmniLightVS0" target="vs_2_0"/>
+      <pixelshader entry="OmniLightPS0" target="ps_2_0"/>
+    </pass>
+    <pass>
+      <depth_state>
+        <zfunc value="greater"/>
+        <zwrite value="false"/>
+      </depth_state>
+      <rasterizer_state>
+        <cullmode value="front"/>
+      </rasterizer_state>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="63"/>
+        <writemask value="63"/>
+        <ref value="0"/>
+        <func_front value="equal"/>
+        <failop_front value="dec"/>
+        <zfailop_front value="keep"/>
+        <passop_front value="keep"/>
+      </stencil_state>
+      <colorwrite_state>
+        <red value="true"/>
+        <green value="true"/>
+        <blue value="true"/>
+        <alpha value="true"/>
+      </colorwrite_state>
+      <alphablend_state>
+        <enable value="true"/>
+        <srcblend value="$srcBlend"/>
+        <destblend value="$destBlend"/>
+      </alphablend_state>
+      <vertexshader entry="OmniLightVS" target="vs_2_0"/>
+      <pixelshader entry="OmniLightPS" target="ps_2_0"/>
+    </pass>
+  </effect>
+  <effect name="omni_">
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+      </streamdefine>
+      <depth_state>
+        <zfunc value="lessequal"/>
+        <zwrite value="false"/>
+      </depth_state>
+      <rasterizer_state>
+        <cullmode value="back"/>
+      </rasterizer_state>
+      <stencil_state>
+        <enable value="true"/>
+        <readmask value="127"/>
+        <writemask value="127"/>
+        <ref value="0"/>
+        <func_front value="equal"/>
+        <failop_front value="keep"/>
+        <zfailop_front value="inc_wrap"/>
+        <passop_front value="keep"/>
+      </stencil_state>
+      <vertexshader entry="OmniLightVS0" target="vs_2_0"/>
+      <pixelshader entry="OmniLightPS0" target="ps_2_0"/>
+    </pass>
+	</effect>
+	<effect name="shading">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="greater"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="shadingVS" target="vs_2_0"/>
+			<pixelshader entry="shadingPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="shading_ldr">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="greater"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="shadingVS" target="vs_2_0"/>
+			<pixelshader entry="shadingLDR_PS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="framebuffer_transparent_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="srcalpha"/>
+				<destblend value="invsrcalpha"/>
+			</alphablend_state>
+			<pixelshader entry="framebuffer_transparent_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_expand_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_expand_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_srgb_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_srgb_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_depth_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_depth_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_unpackHalfLambert_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_unpackHalfLambert_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_one_pixel">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_one_pixel" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="framebuffer_lightbufferLDR_blit">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="framebuffer_lightbufferLDR_blit" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>	

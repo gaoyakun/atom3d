@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="gb2312" ?>
+<UI version="1">
+    <component type="dialog" name="dialog1" rect="282,109,238,106" id="100" imageid="1" style="3" border="1" dragmode="1" dropable="0" dragable="0" layout="vertical" layout_gap="8" layout_spc="8,8,8,8" fontcolor="-16777216">
+        <component type="spacer" name="spacer1" rect="-20,-46,-100,30" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-16777216">
+            <component type="label" name="label1" rect="-29,3,46,24" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="重命名:" alignx="0" aligny="1" offsetx="0" offsetY="0" color="0" outlinecolor="0" underlinecolor="0" rotation="0.000000" />
+            <component type="edit" name="NewName" rect="18,7,-100,24" id="102" imageid="0" style="9" border="2" dragmode="1" dropable="0" dragable="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" readonly="0" password="0" number="0" cursor="-1" cursorw="2" cursoroffset="0" maxchar="0" />
+        </component>
+        <component type="spacer" name="spacer2" rect="7,5,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-16777216">
+            <component type="spacer" name="spacer3" rect="-35,-31,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" />
+            <component type="button" name="OK" rect="198,31,60,-100" id="103" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="确定" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" outlinecolor="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="Cancel" rect="284,13,60,-100" id="104" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="取消" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" outlinecolor="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+    </component>
+</UI>

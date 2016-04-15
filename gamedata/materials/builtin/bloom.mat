@@ -1,0 +1,299 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="screenCoordScaleBias" type="float4" default="$Deferred_ScreenCoordScaleBias"/>
+	<param name="screenCoordScaleBias_bloom" type="float4" default="1,1,0,0"/>
+	<param name="screenCoordThreshold" type="float4" default="0,0,1,1"/>
+	
+	<param name="g_avSampleOffsets" type="float4[5]"/>
+	<param name="g_avSampleWeights" type="float4[5]"/>
+	<param name="fBrightPassThreshold" type="float" default="0.3"/>
+	<param name="fBrightPassOffset" type="float" default="10.0"/>
+	<param name="fBloomScale" type="float" default="1.0"/>
+	<param name="texToTexParams0" type="float4"/>
+	<param name="texToTexParams1" type="float4"/>
+	<param name="tex0" type="texture"/>
+	<param name="inputTexture" type="texture"/>
+	<param name="bloomTexture" type="texture"/>
+	<param name="s0p" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex0"/>
+		<srgb value="true" />
+	</param>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$inputTexture"/>
+		<srgb value="true" />
+	</param>
+	<param name="bloomSampler" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$bloomTexture"/>
+		<srgb value="true" />
+	</param>
+	<code>
+          <![CDATA[
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		
+		float4 BrightPassFilterPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			
+			float4 vSample = tex2D( s0p, vScreenPosition );
+			
+			//return vSample;
+			
+			// Subtract out dark pixels
+			vSample.rgb -= fBrightPassThreshold;
+			
+			// Clamp to 0
+			vSample = max(vSample, 0.0f);
+			
+			// Map the resulting value into the 0 to 1 range. Higher values for
+			// BRIGHT_PASS_OFFSET will isolate lights from illuminated scene 
+			// objects.
+			vSample.rgb /= (fBrightPassOffset+vSample);
+
+		    
+			return vSample;
+		}
+		float4 BloomPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+		    
+			//float2 tc = vScreenPosition * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			float2 tc = vScreenPosition;// * screenCoordScaleBias_bloom.xy + screenCoordScaleBias_bloom.zw;
+			
+			//return tex2D(s0p, tc);
+			
+			float4 vSample = 0.0f;
+			float4 vColor = 0.0f;
+		        
+			float2 vSamplePosition;
+		    
+#if 1
+			// Perform a one-directional gaussian blur
+			for(int iSample = 0; iSample < 5; iSample++)
+			{
+				vSamplePosition = 	tc + g_avSampleOffsets[iSample].xy;
+				vColor 			= 	tex2D(s0p, vSamplePosition);
+				vSample 		+= 	g_avSampleWeights[iSample] * vColor;
+			}
+			
+#else
+
+			// Perform a one-directional gaussian blur
+			for(int iSample = 0; iSample < 4; iSample++)
+			{
+				vSamplePosition = 	tcCenter + g_avSampleOffsets[iSample].xy;
+				vSample 		+= 	tex2D(s0p, vSamplePosition);
+			}
+			vSample *= 0.25f;
+			
+#endif
+		    
+			
+			return vSample;
+		}
+		
+		// With rotated grid sampling (less artifacts). Used for image rescaling
+		float4 texToTexSampledPS(in float2 vScreenPosition : TEXCOORD0) : COLOR
+		{
+			float2 tc = vScreenPosition * screenCoordScaleBias_bloom.xy + screenCoordScaleBias_bloom.zw;
+			
+#if 1
+			half4 _c0 = tex2D(s0p, tc);
+			
+			#if 0
+			
+				return saturate(_c0 - fBrightPassThreshold);
+			
+			#else
+			
+				half4 _c1 = tex2D(s0p, clamp( tc + texToTexParams0.xy, screenCoordThreshold.xy, screenCoordThreshold.zw ) );
+				half4 _c2 = tex2D(s0p, clamp( tc + texToTexParams0.zw, screenCoordThreshold.xy, screenCoordThreshold.zw ) );
+				half4 _c3 = tex2D(s0p, clamp( tc + texToTexParams1.xy, screenCoordThreshold.xy, screenCoordThreshold.zw ) );
+				half4 _c4 = tex2D(s0p, clamp( tc + texToTexParams1.zw, screenCoordThreshold.xy, screenCoordThreshold.zw ) );
+				
+				//OUT.Color = (_c0 + _c1 + _c2 + _c3 + _c4) * 0.2h;
+				_c0.rgba = ( _c0.rgba * 0.2 + _c1.rgba * 0.2 + _c2.rgba * 0.2 + _c3.rgba * 0.2 + _c4.rgba * 0.2 ) - fBrightPassThreshold;
+				return saturate( _c0 );
+				
+			#endif
+#else
+			half4 _c0 = tex2D(s0p, tc);
+			_c0 = max( tex2D(s0p, tc + texToTexParams0.xy), _c0 );
+			_c0 = max( tex2D(s0p, tc + texToTexParams0.zw), _c0 );
+			_c0 = max( tex2D(s0p, tc + texToTexParams1.xy), _c0 );
+			_c0 = max( tex2D(s0p, tc + texToTexParams1.zw), _c0 );
+						
+			return saturate( _c0 - ( 1.0 - fBloomScale ) );
+#endif
+		}
+		
+		VS_OUTPUT vs(in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			OUT.position = mul(float4(IN.position, 1.0), MVP);
+			OUT.tex0 = IN.tex0;
+			
+			//OUT.tex0 = OUT.tex0 * screenCoordScaleBias.xy + screenCoordScaleBias.zw;
+			
+			return OUT;
+		}
+		
+		/*
+		half3 blendSoftLight(half3 a, half3 b)
+		{
+		//float3 c = 2 * a * b + a * a * (1 - 2 * b);
+		//float3 d = sqrt(a) * (2 * b - 1) + 2 * a * (1 - b);
+		//
+		//return ( b < 0.5 )? c : d;
+
+		// 12 inst
+
+		half3 c = 2 * a * b * ( 1 + a * (  1 - b ) ); // 4 inst
+
+		half3 a_sqrt = sqrt( a );  // 1
+		half3 d = ( a  +  b * (a_sqrt - a )) * 2 - a_sqrt; // 3 inst
+
+		return( b < 0.5 )? c : d; // 1
+		}
+		*/
+		
+		float Gaussian (float x, float deviation)
+		{
+			return (1.0 / sqrt(2.0 * 3.141592 * deviation)) * exp(-((x * x) / (2.0 * deviation)));	
+		}
+
+
+		float4 ps
+		(
+			in float2 vScreenPosition : TEXCOORD0
+		) : COLOR
+		{
+		    float2 tc = vScreenPosition * screenCoordScaleBias_bloom.xy + screenCoordScaleBias_bloom.zw;
+			
+			float4 vSample = tex2D( inputSampler, tc );
+			float4 vBloom = tex2D( bloomSampler, tc );
+			
+#if 1
+			static const float3 LUMINANCE_VECTOR  = float3(0.2125f, 0.7154f, 0.0721f);
+			float lumin = dot( vSample.rgb, LUMINANCE_VECTOR ) * 2 - 1;
+			
+			/*
+			float luminMin = 0.0f;
+			float luminMax = 1.0f;
+			float luminCenter = ( luminMin+luminMax ) * 0.5f;
+			float ratio0 = 1 - saturate( lumin - luminMin ) / ( luminCenter - luminMin );
+			float ratio1 = 1 - saturate( luminMax - lumin ) / ( luminMax - luminCenter );
+			float scale = max( ratio0, ratio1 );
+			
+			//scale = abs( lumin * 2 - 1 );
+			vBloom.rgb *= lerp( fBloomScale, 0, 1-scale );
+			*/
+			
+			lumin = 1.0 - Gaussian( lumin * 3, 1.0 );
+			
+			vBloom.rgba *= lerp( fBloomScale, 0, 1.0 - abs(lumin) );
+			vSample.rgb += vBloom.rgb; // Additive blending (strong result, high overexposure)
+			//vSample.rgb = blendSoftLight(  vBloom.rgb, vSample.rgb );
+			
+			//vSample.rgb = lerp(vSample.rgb,vSample.rgb+vBloom.rgb, 1.0 - fBloomScale);
+#else
+			vSample.rgb = ( vSample.rgb + vBloom.rgb * fBloomScale ) - ( vBloom.rgb * vSample.rgb );	// Screen blending (mild result, medium overexposure)
+			//vSample.rgb = lerp( composition, vSample.rgb, 0.5 );
+#endif
+			
+			//lumin = dot( vSample.rgb, LUMINANCE_VECTOR );
+			//vSample.a = max( vSample.a, lumin * 100 );
+			
+			return saturate( vSample );
+		}
+		
+	]]></code>
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="BrightPassFilter">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="BrightPassFilterPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="Bloom">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="BloomPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="textureToTextureResampled">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="texToTexSampledPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

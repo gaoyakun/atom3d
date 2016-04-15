@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<material core="/materials/sequence_2d.mat">		<!-- sequence_2d.mat 用于处理2维的序列帧图片-->
+	<Param name="frameParams" type="vector4" value="16,4,4,0.04"/> <!-- 16：总帧数 | 4 ：横排的帧数 | 4：竖排的帧数 | 0.04：播放单帧所需时间 -->
+</material>

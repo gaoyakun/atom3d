@@ -1,0 +1,203 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="matView" type="float4x4" />
+	<param name="matViewIT" type="float4x4" />
+	<param name="eyeWSPos" type="float3" />
+	<param name="viewAspectRatioRain" type="float"/>
+	<param name="invTanHalfFovRain" type="float" />
+	<param name="linearDepthParamRain" type="float4" />
+	
+	<param name="View" type="float4x4" default="$Inv_View_Matrix" />
+	<param name="EyePos" type="float3" default="$WorldSpaceEye" />
+	<param name="Time" type="float" default="$TimeInSecond" />
+	<param name="sunLightDir" type="float3" default="$SunLightDir" />
+	
+	<param name="rainPuddleParams" type="float4" default="$RainLayer_PuddleParams" editortype="none"/>
+	<param name="rainLayerParams" type="float4" default="$RainLayer_LayerParams" editortype="none"/>
+	<param name="rainWavesTexture" type="texture" default="$RainLayer_PuddleTexture"/>
+	
+	<param name="rainBumpShiftTexture" type="texture"/>
+	<param name="inputTexture" type="texture"/>
+	
+	<param name="rainWavesSampler" type="sampler2D">
+		<texture value="$rainWavesTexture"/>
+		<filter value="lln"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="rainBumpShiftSampler" type="sampler2D">
+		<texture value="$rainBumpShiftTexture"/>
+		<filter value="lll"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+	</param>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="lln"/>
+		<texture value="$inputTexture"/>
+	</param>
+	
+	<code><![CDATA[
+				
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 HPosition    : POSITION;
+			float2 baseTC       : TEXCOORD0;
+			float3 eyedir		: TEXCOORD1;
+		};
+		
+		VS_OUTPUT vs (in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			
+			OUT.HPosition = mul(float4(IN.position, 1.0), MVP);
+			
+			//float4 ScrTC = OUT.HPosition;
+			//ScrTC.xy = (ScrTC.xy * float2(1,-1) + ScrTC.ww  ) * 0.5;
+			// No offsets required in d3d10
+			//ScrTC.xy += g_VS_ScreenSize.zw * HPos.w;
+			
+			OUT.baseTC = IN.tex0;
+			
+			OUT.eyedir = getEyeDirFromClipSpace (OUT.HPosition);
+			
+			return OUT;
+		}
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float2 screenCoord = IN.baseTC.xy;///IN.baseTC.w;
+			
+			float4 input = tex2D( inputSampler, screenCoord );
+			
+			float x = screenCoord.x * 2.f - 1.f;
+			float y = (1.f - screenCoord.y) * 2.f - 1.f;
+			float3 eyedir = float3 (x * viewAspectRatioRain, y, invTanHalfFovRain);
+			
+			float depth = getDepth (screenCoord);
+			depth = linearDepthParamRain.x/(linearDepthParamRain.y-depth);
+			float3 eyePos = eyedir * depth / eyedir.z;
+					
+			// get the world position of scene
+			float3 vPosition = mul( float4(eyePos,1), matView ).xyz;
+			
+			// get the world normal of scene
+			//half halflambertScale;
+			//half4 normal_sp = getNormalAndSpecularPower ( screenCoord, halflambertScale );
+			float  	thickness 		= 0;
+			float 	specPower		= 0;
+			float3 	normal_sp 		= getNormalAndSpecularPower ( screenCoord, specPower, thickness );
+			
+			half3 vNormal = normal_sp.xyz;  // view space 
+			vNormal = mul( vNormal.xyz, (float3x3)matViewIT );
+			
+			// get the view vector
+			const half3 vViewVec = eyeWSPos.xyz - vPosition.xyz;
+			
+			// get the length of view vector
+			const half fViewVecLen = length(vViewVec);
+			
+			// normalized view vector
+			const half3 vEye = vViewVec / fViewVecLen;
+			
+			
+			//////////////////////////////////////////////////////////////////////////////////////////////////
+			// Input params
+
+			// UP IS
+			const half fPuddlesBlendAmount = saturate(vNormal.y);
+			static const half RainShiftTile = 0.1;
+			//static const half PuddlesTile = 0.025;
+			
+			// puddle texcoord 
+			const half2 tcBase = vPosition.xz * rainPuddleParams.w;
+
+			half4 tcShifting = 0;
+			tcShifting.xyz = vPosition.xzy * RainShiftTile;
+
+			// Output texture coordinates for rain shifting, using diferent z offsets
+			float2 rainAnimParams = float2( 0.1665, 0.0832 ) * Time;
+			tcShifting = tcShifting.xyzz * half4(0.8h, 0.8h, 0.2h, 0.4h) + half4(0.h, 0.h, rainAnimParams.xy);
+
+			//////////////////////////////////////////////////////////////////////////////////////////////////
+			// Horizontal rain using wave propagation  
+
+			//if (rainPuddleParams.z > 0.05)
+			{
+				half2 cWaves = rainPuddleParams.z * ( tex2D(rainWavesSampler, tcBase + rainPuddleParams.xy * 0.005).xy * 2 - 1 );
+				vNormal.xz += cWaves * pow( fPuddlesBlendAmount, 64.0 ) * ( 2.0 - input.a );
+			}
+
+			//////////////////////////////////////////////////////////////////////////////////////////////////
+			// Vertical shifting rain layers
+
+			const half3 tcRainShiftHi = tcShifting.xyw;
+			half3 vRainShiftY = tex2D( rainBumpShiftSampler, tcRainShiftHi.yz ).xyz * 2 - 1;
+			half3 vRainShiftZ = tex2D( rainBumpShiftSampler, tcRainShiftHi.xz ).xyz * 2 - 1;
+
+			const half3 tcRainShiftLow = tcShifting.xyz * half3(0.5h, 0.5h, 1.h);
+			vRainShiftY += tex2D( rainBumpShiftSampler, tcRainShiftLow.yz ).xyz * 2 - 1;
+			vRainShiftZ += tex2D( rainBumpShiftSampler, tcRainShiftLow.xz ).xyz * 2 - 1;
+
+			// Blend normals
+			half2 vRainShiftBlend = abs( vNormal.xz );
+			half3 vRainShiftN = ( vRainShiftY * vRainShiftBlend.x + vRainShiftZ * vRainShiftBlend.y );
+
+			//vNormal.xz += vRainShiftN.xy * saturate(1.h - fPuddlesBlendAmount);
+			vNormal.xyz = normalize( vNormal.xyz );
+			
+			half NdotE = ( dot(vNormal.xyz, vEye.xyz) );
+			half OneMinusNdotE = saturate(1.h - NdotE);
+			half fFresnel = OneMinusNdotE * OneMinusNdotE * OneMinusNdotE;
+			//half3 vReflectionWS = (2.h * NdotE * vNormal) - vEye.xyz;
+			
+			float3 half_vec = sunLightDir.xyz + vEye.xyz ;
+			half_vec = float3(0,1,0);//normalize( lerp( float3(0,1,0), half_vec, 0.5 ) );
+			float spec = pow( saturate( dot(half_vec.xyz,vNormal.xyz) ), 256 );
+			
+			half3 cDiffuse = saturate( dot(sunLightDir.xyz, vNormal.xyz) );
+			
+			const half3 suncolor = half3( 0.5,0.4,0.4 );
+			const half sunMultiplier = 0.5;
+			cDiffuse *= suncolor * sunMultiplier;
+			const half3 skycolor = half3( 0.2,0.25,0.3 );
+			const half  skyMultiplier = 0.75;
+			
+			const half distanceAtten = saturate( 1.0 - ( fViewVecLen - rainLayerParams.y ) / ( rainLayerParams.z - rainLayerParams.y ) );
+			
+			// fFresnel / distance attenuation / global density
+			float horizonAttenFactor = 1.0;//saturate( dot( vEye.xyz, float3( 0,1,0 ) ) );
+			cDiffuse = ( cDiffuse + skycolor * spec * skyMultiplier ) * horizonAttenFactor * distanceAtten * rainLayerParams.x;
+			
+			// input.a : if water is 0, other is 1
+			return float4( input.xyz + cDiffuse * input.a, input.a);
+		}
+		
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>
+

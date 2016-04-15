@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<material auto="0">										
+	<param name="zfunc" type="int" />
+	<code><![CDATA[
+		struct v2p
+		{
+			float4 position : POSITION0;
+			float4 diffuse : COLOR0;
+		};
+		float4 ps (in v2p IN) : COLOR0
+		{
+			return IN.diffuse;
+		}
+	]]></code>						
+	<effect name="default">										
+		<pass>														
+			<streamdefine>											
+				<stream semantec="position"/>	
+				<stream semantec="color0" />
+			</streamdefine>											
+			<alphablend_state>										
+				<enable value="true" />							
+				<srcblend value="srcalpha" />						
+				<destblend value="invsrcalpha" />					
+			</alphablend_state>										
+			<depth_state>											
+				<zfunc value="$zfunc" />							
+				<zwrite value="false" />							
+			</depth_state>											
+			<rasterizer_state>										
+				<cullmode value="none" />					
+			</rasterizer_state>			
+			<pixelshader entry="ps" target="ps_2_0" />		
+		</pass>														
+	</effect>														
+</material>	

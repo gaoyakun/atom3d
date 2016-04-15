@@ -1,0 +1,687 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<param name="g_avSampleOffsets" type="float4[16]"/>
+	<param name="g_avSampleWeights" type="float4[16]"/>
+	<param name="g_fMiddleGray" type="float"/>
+	<param name="g_fElapsedTime" type="float"/>
+	<param name="g_fBloomScale" type="float"/>
+	<param name="g_fStarScale" type="float"/>
+	<param name="g_bEnableToneMap" type="float" default="1.0"/>
+	<param name="g_bEnableBlueShift" type="float" default="1.0"/>
+	<param name="g_brightPassThreshold" type="float" default="1.0"/>
+	<param name="g_brightPassOffset" type="float" default="10.0"/>
+	
+	<param name="g_bEnableFilmicMapping" type="float" default="0.0"/>
+	<param name="g_filmicCurveParam" type="float4" />
+	<param name="g_HDRSaturate" type="float" />
+	<param name="g_HDRContrast" type="float" />
+	<param name="g_HDRColorBalance" type="float3" />
+	
+	<param name="tex0" type="texture"/>
+	<param name="tex1" type="texture"/>
+	<param name="tex2" type="texture"/>
+	<param name="tex3" type="texture"/>
+	<param name="s0p" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex0"/>
+	</param>
+	<param name="s1p" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex1"/>
+	</param>
+	<param name="s2p" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex2"/>
+	</param>
+	<param name="s3p" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex3"/>
+	</param>
+	<param name="s0l" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex0"/>
+	</param>
+	<param name="s1l" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex1"/>
+	</param>
+	<param name="s2l" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex2"/>
+	</param>
+	<param name="s3l" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex3"/>
+	</param>
+	<code>
+          <![CDATA[
+		static const float  BRIGHT_PASS_THRESHOLD  = 2.0f;  // Threshold for BrightPass filter
+		static const float  BRIGHT_PASS_OFFSET     = 10.0f; // Offset for BrightPass filter
+		static const float3 LUMINANCE_VECTOR  = float3(0.2125f, 0.7154f, 0.0721f);
+		// The per-color weighting to be used for blue shift under low light.
+		static const float3 BLUE_SHIFT_VECTOR = float3(1.05f, 0.97f, 1.27f); 
+		
+		float4 SampleLumInitial
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float3 vSample = 0.0f;
+			float  fLogLumSum = 0.0f;
+
+			for(int iSample = 0; iSample < 9; iSample++)
+			{
+				// Compute the sum of log(luminance) throughout the sample points
+				vSample = tex2D(s0l, vScreenPosition+g_avSampleOffsets[iSample].xy);
+				fLogLumSum += log(dot(vSample, LUMINANCE_VECTOR)+0.0001f);
+			}
+		    
+			// Divide the sum to complete the average
+			fLogLumSum /= 9;
+			
+			return float4(fLogLumSum, fLogLumSum, fLogLumSum, 1.0f);
+		}
+		float4 SampleLumIterative
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float fResampleSum = 0.0f; 
+		    
+			for(int iSample = 0; iSample < 16; iSample++)
+			{
+				// Compute the sum of luminance throughout the sample points
+				fResampleSum += tex2D(s0p, vScreenPosition+g_avSampleOffsets[iSample].xy);
+			}
+		    
+			// Divide the sum to complete the average
+			fResampleSum /= 16;
+
+			return float4(fResampleSum, fResampleSum, fResampleSum, 1.0f);
+		}
+		float4 SampleLumFinal
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float fResampleSum = 0.0f;
+		    
+			for(int iSample = 0; iSample < 16; iSample++)
+			{
+				// Compute the sum of luminance throughout the sample points
+				fResampleSum += tex2D(s0p, vScreenPosition+g_avSampleOffsets[iSample].xy);
+			}
+		    
+			// Divide the sum to complete the average, and perform an exp() to complete
+			// the average luminance calculation
+			fResampleSum = exp(fResampleSum/16);
+		    
+			return float4(fResampleSum, fResampleSum, fResampleSum, 1.0f);
+		}
+		float4 CalculateAdaptedLumPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float fAdaptedLum = tex2D(s0p, float2(0.5f, 0.5f));
+			float fCurrentLum = tex2D(s1p, float2(0.5f, 0.5f));
+				
+			// The user's adapted luminance level is simulated by closing the gap between
+			// adapted luminance and current luminance by 2% every frame, based on a
+			// 30 fps rate. This is not an accurate model of human adaptation, which can
+			// take longer than half an hour.
+			float fNewAdaptation = max( 0, fAdaptedLum + (fCurrentLum - fAdaptedLum) * g_fElapsedTime );
+			
+			return float4(fNewAdaptation, fNewAdaptation, fNewAdaptation, 1.0f);
+		}
+		float EyeAdaption(float lum)
+		{
+			return lerp(0.2f, lum, 0.5f);
+		}
+		float3 F(float3 x)		
+		{
+			const float A = 0.22f;
+			const float B = 0.30f;
+			const float C = 0.10f;
+			const float D = 0.20f;
+			const float E = 0.01f;
+			const float F = 0.30f;
+			return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+    	}
+		
+		//-------------------------------------------------------------//
+		half GetLuminance( half3 color )
+		{
+			return dot( color, half3( 0.2126h, 0.7152h, 0.0722h ) );
+		}
+
+		half4 FilmicMapping( in half4 cScene, in half4 cBloom, in half fAdaptedLum, in half fVignetting )
+		{		
+			const float sceneKey = 0.18;
+			const float toe = 0;							//0.004;
+			const float whitepoint = g_filmicCurveParam.w; 	//4.0;
+
+			fAdaptedLum = max( 0.001, EyeAdaption( fAdaptedLum ) );
+			
+			// Exposure compensation -/+1.5 f-stops
+			half exposure = clamp(sceneKey / fAdaptedLum, 0.36, 2.8);
+		  
+			half3 cColor = (exposure * cScene.xyz + cBloom /* 0.5*/);
+
+		#if 0
+			// hdr color grading
+			// hdr contrast
+			cColor.rgb = sceneKey + g_HDRContrast * ( cColor - sceneKey );
+			// hdr color balance
+			cColor.rgb *= g_HDRColorBalance.rgb;
+			// saturation
+			float fLuminance = GetLuminance(cColor.rgb);
+			cColor.rgb = max(0, fLuminance + g_HDRSaturate * ( cColor.rgb - fLuminance ));
+		#endif
+
+			// Film response curve - todo: back parameters cpu side, when everyone fine with final curve setup
+			half4 x = max( 0.001, half4( max( cColor.rgb + toe, 0 ), whitepoint ) );
+			
+			half4 compressedCol = (x * (g_filmicCurveParam.x * 6.2 * x + g_filmicCurveParam.y * 0.5)) / (x * (g_filmicCurveParam.x * 6.2 * x + 1.7) + g_filmicCurveParam.z * 0.06);
+			
+			cScene.xyz = compressedCol.xyz / compressedCol.w;
+			
+			return cScene;
+		}
+		
+		float4 FinalScenePassPS_(in float2 vScreenPosition)
+		{
+			float4 vSample = tex2D(s0p, vScreenPosition);			
+			float4 vBloom = tex2D(s1l, vScreenPosition);
+			float4 vStar = tex2D(s2l, vScreenPosition);
+			float fAdaptedLum = tex2D(s3p, float2(0.5f, 0.5f));
+
+			// For very low light conditions, the rods will dominate the perception
+			// of light, and therefore color will be desaturated and shifted
+			// towards blue.
+			//if( g_bEnableBlueShift )
+			//{
+				// Define a linear blending from -1.5 to 2.6 (log scale) which
+				// determines the lerp amount for blue shift
+				//float fBlueShiftCoefficient = 1.0f - (fAdaptedLum + 1.5)/4.1;
+				//fBlueShiftCoefficient = saturate(fBlueShiftCoefficient);
+
+				// Lerp between current color and blue, desaturated copy
+				//float3 vRodColor = dot( (float3)vSample, LUMINANCE_VECTOR ) * BLUE_SHIFT_VECTOR;
+				//vSample.rgb = lerp( (float3)vSample, vRodColor, fBlueShiftCoefficient );
+			//}
+		    
+			// Add the star and bloom post processing effects
+			if( !g_bEnableFilmicMapping ) 
+			{
+				vSample += g_fStarScale * vStar;
+				vSample += g_fBloomScale * vBloom;
+			}
+			
+			// Map the high range of color values into a range appropriate for
+			// display, taking into account the user's adaptation level, and selected
+			// values for for middle gray and white cutoff.
+			if( g_bEnableToneMap )
+			{
+				if( g_bEnableFilmicMapping )
+				{
+					vBloom = g_fBloomScale * vBloom;
+					vSample = saturate( FilmicMapping( vSample, vBloom, fAdaptedLum, 0 ) );
+				}
+				else
+				{
+					const float3 BLUE_SHIFT=float3(0.4f, 0.4f, 0.7f);
+					const float3 RGB_TO_LUM=float3(0.2126f, 0.7152f, 0.0722f);
+					float lum = dot(vSample.rgb, RGB_TO_LUM);
+					vSample.rgb = lerp(lum * BLUE_SHIFT, vSample.rgb, saturate(16.f * lum));
+					float adapted_lum_test = 3 / (max(0.1f, 1+10*EyeAdaption(fAdaptedLum)));
+					//vSample.rgb *= g_fMiddleGray/(fAdaptedLum + 0.001f);
+					//vSample.rgb /= (1.0f+vSample);
+					vSample.rgb = F(1.6f * adapted_lum_test * vSample.rgb)/F(11.2);
+				}
+			}  
+			
+			if( !g_bEnableFilmicMapping )
+				vSample.rgb = pow(vSample.rgb, 1/2.2);
+		    		    
+			return vSample;
+		}
+		float4 FinalScenePassPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			return FinalScenePassPS_ (vScreenPosition);
+		}
+		float4 FinalScenePassPSRGBL
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float4 c = FinalScenePassPS_(vScreenPosition);
+			c.a = dot(c.rgb, float3(0.299, 0.587, 0.114));
+			return c;
+		}
+		float4 DownScale4x4PS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			return tex2D(s0p, vScreenPosition);
+			float4 sample = 0.0f;
+
+			for( int i=0; i < 16; i++ )
+			{
+				sample += tex2D( s0p, vScreenPosition + g_avSampleOffsets[i].xy );
+			}
+		    
+			return sample / 16;
+		}
+		float4 DownScale2x2PS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			
+			float4 sample = 0.0f;
+
+			for( int i=0; i < 4; i++ )
+			{
+				sample += tex2D( s0p, vScreenPosition + g_avSampleOffsets[i].xy );
+			}
+		    
+			return sample / 4;
+		}
+		float4 GaussBlur5x5PS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			
+			float4 sample = 0.0f;
+
+			for( int i=0; i < 12; i++ )
+			{
+				sample += g_avSampleWeights[i] * tex2D( s0p, vScreenPosition + g_avSampleOffsets[i].xy );
+			}
+
+			return sample;
+		}
+		float4 BrightPassFilterPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float4 vSample = tex2D( s0p, vScreenPosition );
+			float  fAdaptedLum = tex2D( s1p, float2(0.5f, 0.5f) );
+			
+			// Determine what the pixel's value will be after tone-mapping occurs
+			//vSample.rgb *= g_fMiddleGray/(fAdaptedLum + 0.001f);
+			
+			// Subtract out dark pixels
+			vSample.rgb -= g_brightPassThreshold;
+			
+			// Clamp to 0
+			vSample = max(vSample, 0.0f);
+			
+			// Map the resulting value into the 0 to 1 range. Higher values for
+			// BRIGHT_PASS_OFFSET will isolate lights from illuminated scene 
+			// objects.
+			vSample.rgb /= (g_brightPassOffset+vSample);
+		    
+			return vSample;
+		}
+		float4 BloomPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+		    
+			float4 vSample = 0.0f;
+			float4 vColor = 0.0f;
+		        
+			float2 vSamplePosition;
+		    
+			// Perform a one-directional gaussian blur
+			for(int iSample = 0; iSample < 15; iSample++)
+			{
+				vSamplePosition = vScreenPosition + g_avSampleOffsets[iSample].xy;
+				vColor = tex2D(s0p, vSamplePosition);
+				vSample += g_avSampleWeights[iSample]*vColor;
+			}
+		    
+			return vSample;
+		}
+		float4 StarPS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float4 vSample = 0.0f;
+			float4 vColor = 0.0f;
+		        
+			float2 vSamplePosition;
+		    
+			// Sample from eight points along the star line
+			for(int iSample = 0; iSample < 8; iSample++)
+			{
+				vSamplePosition = vScreenPosition + g_avSampleOffsets[iSample].xy;
+				vSample = tex2D(s0l, vSamplePosition);
+				vColor += g_avSampleWeights[iSample] * vSample;
+			}
+		    	
+			return vColor;
+		}
+		
+		//====================================================================//
+		float4 FinalScenePassPSNoHDR
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float4 vSample = tex2D(s0p, vScreenPosition);
+			vSample.rgb = pow(vSample.rgb, 1/2.2);
+			return vSample;
+		}
+		float4 FinalScenePassPSNoHDRRGBL
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float4 vSample = tex2D(s0p, vScreenPosition);
+			vSample.rgb = pow(vSample.rgb, 1/2.2);
+			vSample.a = dot(vSample.rgb, float3(0.299, 0.587, 0.114));
+			return vSample;
+		}
+		float4 DEBUG_RT_PS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float3 vSample = tex2D(s0p, vScreenPosition);
+			return float4(vSample,1);
+		}
+		float4 DEBUG_RT_LUMIN_PS
+			(
+			in float2 vScreenPosition : TEXCOORD0
+			) : COLOR
+		{
+			float3 vSample = tex2D(s0p, vScreenPosition).rrr;
+			return float4(vSample,1);
+		}
+		//====================================================================//
+		
+	]]></code>
+	<effect name="Bloom" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="BloomPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="Star" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="StarPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="SampleAvgLum" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="SampleLumInitial" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="ResampleAvgLum" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="SampleLumIterative" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="ResampleAvgLumExp" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="SampleLumFinal" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="CalculateAdaptedLum" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="CalculateAdaptedLumPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="DownScale4x4" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="DownScale4x4PS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="DownScale2x2" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="DownScale2x2PS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="GaussBlur5x5" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="GaussBlur5x5PS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="BrightPassFilter" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="BrightPassFilterPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="FinalScenePass" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="FinalScenePassPS" target="ps_3_0"/>
+		</pass>
+	</effect>
+	<effect name="FinalScenePassRGBL" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="FinalScenePassPSRGBL" target="ps_3_0"/>
+		</pass>
+	</effect>
+	<effect name="FinalScenePassNoHDR" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="FinalScenePassPSNoHDR" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="FinalScenePassNoHDRRGBL" scheme="deferred" schemelayer="ToneMap">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="FinalScenePassPSNoHDRRGBL" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="DEBUG_RT">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="DEBUG_RT_PS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="DEBUG_RT_LUMIN">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="DEBUG_RT_LUMIN_PS" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

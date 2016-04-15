@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="gb2312"?>
+<RegionDefines>
+	<Def Name="刷怪区域" Type="Rect" DefSize="5,5" Rotatable="0" ColorKey="怪物Id" DefColor="#FFFFFFFF">
+		<Attributes>
+			<Attrib Name="名称" Type="string"/>
+			<Attrib Name="怪物Id" Type="int"/>
+			<Attrib Name="怪物数量" Type="int"/>
+			<Attrib Name="巡逻范围" Type="int"/>
+		</Attributes>
+		<Colors>
+			<Color Key="0" Value="#FF0000"/>
+			<Color Key="1" Value="#100010"/>
+			<Color Key="2" Value="#200020"/>
+		</Colors>
+		<Template Name="default" Sort="怪物Id" Sep="|" Head="%_Key_%:">%_X_%,%_Z_%,%_HW_%,%怪物数量%,%_RY_%,%巡逻范围%</Template>
+	</Def>
+	<Def Name="测试" Type="Rect" DefSize="20,20" Rotatable="1" DefColor="#FF00FFFF">
+		<Attributes>
+			<Attrib Name="aaa" Type="int"/>
+			<Attrib Name="bbb" Type="float"/>
+			<Attrib Name="ccc" Type="string"/>
+			<Attrib Name="ddd" Type="string"/>
+		</Attributes>
+	</Def>
+</RegionDefines>

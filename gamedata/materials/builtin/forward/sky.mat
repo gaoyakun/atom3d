@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<include filename="/materials/builtin/forward/forwardrendering.inc" />
+	
+	<param name="mMVP" type="float4x4" />	
+	<param name="skyTexture" type="texture"/>
+	<param name="skyDomeSampler" type="sampler2D">
+		<filter value="lln"/>
+		<texture value="$skyTexture"/>
+		<srgb value="true" />
+	</param>
+	
+	<code>
+        <![CDATA[
+        
+		////////////////////////////////////// sky dome /////////////////////////////////////////////////
+		
+		struct SkyDomeVSInput
+        {
+			float4 position 	: POSITION0;
+			float2 texcoord	 	: TEXCOORD0;
+        };
+        struct SkyDomeVSOutput
+        {
+			float4 HPosition 	: POSITION0;
+			float2 texcoord	 	: TEXCOORD0;
+		#if 0	
+			float4 fog 			: TEXCOORD1;
+		#endif
+        };
+        void mainVS_SkyDome (out SkyDomeVSOutput _Output, in SkyDomeVSInput _Input)
+        {
+	        _Output.HPosition 	= mul( _Input.position, mMVP );
+			_Output.HPosition.z = _Output.HPosition.w;
+			_Output.texcoord 	= _Input.texcoord;
+		#if 0
+			float depth = ( fogFactor.x + fogFactor.z ) * 0.5;
+			_Output.fog			= CalcFog(depth);
+		#endif
+        }
+        float4 mainPS_SkyDome( SkyDomeVSOutput _Input ) : COLOR0
+        {
+			float4 color = float4( tex2D( skyDomeSampler,_Input.texcoord).rgb, 1.0 );
+		#if 0
+			ApplyFog( color, _Input.fog );
+		#endif
+			return color;
+        }
+		
+	]]></code>
+	
+	
+	<effect name="SkyDome" scheme="custom" schemelayer="Solid">
+		<pass>
+		  <streamdefine>
+			<stream semantec="position" type="float4"/>
+		  </streamdefine>
+		  <depth_state>
+			<zfunc value="lessequal"/>
+			<zwrite value="false"/>
+		  </depth_state>
+		  <rasterizer_state>
+			<cullmode value="none"/>
+		  </rasterizer_state>
+		  <vertexshader entry="mainVS_SkyDome" target="vs_2_0"/>
+		  <pixelshader entry="mainPS_SkyDome" target="ps_2_0"/>
+		</pass>
+	</effect>
+	
+</material>	

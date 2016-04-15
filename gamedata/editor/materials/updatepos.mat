@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<param name="pos" type="float4"/>
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+		};
+		struct v2p
+		{
+			float4 position: POSITION;
+		};
+		
+		void vs (in a2v IN, out v2p OUT)
+		{
+			OUT.position = IN.position;
+		}
+		
+		float4 ps (in v2p IN) : COLOR
+		{
+			return pos;
+		}
+
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>
+

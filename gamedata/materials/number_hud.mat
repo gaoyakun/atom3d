@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<define name="NUM_DIGITS" value="8" />
+	<param name="diffuseColor" type="float4" default="1.0,1.0,1.0,1.0" editortype="color"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix" />
+	<param name="diffuseTexture" type="texture" editortype="none"/>
+	<param name="srcBlend" type="int" default="5" editortype="e_blendfunc"/>
+	<param name="destBlend" type="int" default="6" editortype="e_blendfunc"/>
+	<param name="digits" type="float4[NUM_DIGITS]" />
+	<param name="num_digits" type="float" />
+	<param name="num_cells" type="float" />
+	<param name="diffuseSampler" type="sampler2D">
+		<texture value="$diffuseTexture"/>
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="true"/>
+	</param>
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+		struct v2p
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+		
+		void vs (in a2v IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.uv = IN.uv * float2(num_digits, 1.0);
+		}
+		
+		float4 ps (in v2p IN): COLOR0
+		{
+			int index = min(floor(IN.uv.x), num_digits-1);
+			int index1 = index / 4;
+			int index2 = index - index1 * 4;
+			float2 uv = float2((digits[index1][index2]+IN.uv.x-index)/num_cells, IN.uv.y);
+			return diffuseColor * tex2D(diffuseSampler, uv);
+		}
+
+	]]></code>
+	
+	<effect name="default" scheme="deferred" schemelayer="HUD">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="$srcBlend"/>
+				<destblend value="$destBlend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="defaultForward" scheme="custom" schemelayer="HUD">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="$srcBlend"/>
+				<destblend value="$destBlend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>
+

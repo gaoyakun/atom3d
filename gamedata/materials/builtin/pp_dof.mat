@@ -1,0 +1,659 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="Time" type="float" default="$TimeInSecond" />
+	<param name="animCoeffs" type="float4" default="0.00024, 0.0002, 0.05, 0.02" editortype="none" />
+	
+	<param name="texToTexParams0" type="float4"/>
+	<param name="texToTexParams1" type="float4"/>
+	
+	<param name="texelOffset" type="float4" />
+	
+	<param name="texelSize" type="float4" />
+	<param name="vDofParamsFocus0" type="float4" />
+	<param name="vDofParamsFocus1" type="float4" />
+	<param name="focusPower" type="float" />
+	
+	<param name="params" type="float4" />
+	
+	<param name="power" type="float" />
+	
+	<param name="bokehDelta" type="float4" />
+	
+	<param name="tex0" type="texture"/>
+	<param name="s0p" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex0"/>
+		<srgb value="true" />
+	</param>
+	<param name="tex1" type="texture"/>
+	<param name="s1p" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$tex1"/>
+		<srgb value="true" />
+	</param>
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$inputTexture"/>
+		<srgb value="true" />
+	</param>
+	
+	<param name="bluredTexture" type="texture"/>
+	<param name="bluredSampler" type="sampler2D">
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$bluredTexture"/>
+		<srgb value="true" />
+	</param>
+	<param name="dofBlurMaskTex" type="texture"/>
+	<param name="dofBlurMaskSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$dofBlurMaskTex"/>
+		<srgb value="false" />
+	</param>
+	
+	<code><![CDATA[
+				
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 HPosition    : POSITION;
+			float2 baseTC       : TEXCOORD0;
+			//float4 perturbTC	: TEXCOORD1;
+		};
+		
+		VS_OUTPUT vs (in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			
+			OUT.HPosition = mul(float4(IN.position, 1.0), MVP);
+			
+			OUT.baseTC = IN.tex0;
+			
+			//float timefactor = Time * perturbScale.z;
+			//float4 vAnimParams = float4( timefactor, -timefactor, timefactor, -timefactor );
+			//OUT.perturbTC = OUT.baseTC.xyxy * perturbScale.wwww + vAnimParams.xxyy;
+			
+			return OUT;
+		}
+		
+		float bias(float b, float x)
+		{
+			return pow(x, log2(b)/log2(0.5f));
+		}
+	
+		float gain(float g, float x)
+		{
+			if(x < 0.5)
+				return bias(1-g,2*x)/2;
+			else
+				return 1 - bias(1-g,2 - 2*x)/2;
+		}
+		
+		void smoothstepX1(float min,float max, inout float value)
+		{
+			value = smoothstep( min, max, value );
+		}
+		
+		void smoothstepX2(float min,float max, inout float value)
+		{
+			value = smoothstep( min, max, value );
+			value = smoothstep( min, max, value );
+		}
+		void smoothstepX3(float min,float max, inout float value)
+		{
+			value = smoothstep( min, max, value );
+			value = smoothstep( min, max, value );
+			value = smoothstep( min, max, value );
+		}
+				
+		float getBlendFactor( float2 screenCoord, in float p )
+		{
+			float fFocusRangeNear = 0;
+			float fFocusRangeFar = 0;
+			float fDepthBlur = 0;
+			
+			float fCenterDepth = linearizeDepth ( getDepth ( screenCoord ) );
+			
+		#if 0
+		
+			// custom triangle filter
+			float fNearDepth = fCenterDepth;
+			fNearDepth = min(fNearDepth, linearizeDepth(getDepth( screenCoord.xy + 4 * texelSize.xy * float2(0,1))));		
+			fNearDepth = min(fNearDepth, linearizeDepth(getDepth( screenCoord.xy + 4 * texelSize.xy * float2(-1.25,-0.45))));		
+			fNearDepth = min(fNearDepth, linearizeDepth(getDepth( screenCoord.xy + 4 * texelSize.xy * float2(1.25,-0.45))));		
+
+			half4 vFocusRanges = saturate( half4(fNearDepth.xx, fCenterDepth.xx ) * vDofParamsFocus0.xzxz + vDofParamsFocus0.ywyw );
+			fFocusRangeFar  = max(vFocusRanges.x, vFocusRanges.z);
+			fFocusRangeNear = max(vFocusRanges.y, vFocusRanges.w);
+			
+		#else
+			
+			float2 vFocusRanges = saturate( half2(fCenterDepth.xx) * vDofParamsFocus0.xz + vDofParamsFocus0.yw );
+			fFocusRangeFar  = vFocusRanges.x;
+			fFocusRangeNear = vFocusRanges.y;
+			
+		#endif
+			
+		#if 0
+		
+			fFocusRangeFar 	= gain( p, fFocusRangeFar );//pow(fFocusRangeFar,p);
+			fFocusRangeNear = gain( p, fFocusRangeNear );
+		
+		#else
+			
+			smoothstepX2(0.0,1.0,fFocusRangeFar);
+			smoothstepX2(0.0,1.0,fFocusRangeNear);
+			
+		#endif
+		
+			//half2 focusZone = step( vDofParamsFocus2.zw, abs( fCenterDepth.xx - vDofParamsFocus2.xy ) );
+			//fFocusRangeFar *= focusZone.x * focusZone.y;
+			//fFocusRangeNear *= focusZone.x * focusZone.y;
+			
+			//fFocusRangeFar  = vFocusRanges.x;
+			//fFocusRangeNear = vFocusRanges.y;
+			
+		#if 0
+			half fFocusRangeNearMin =  vDofParamsFocus1.y * saturate( 1 - (fNearDepth / vDofParamsFocus1.x) ) ;	
+			half fFocusRangeNearMin =  vDofParamsFocus1.y * saturate( 1 - (min(fNearDepth, fCenterDepth) / vDofParamsFocus1.x) ) ;	
+		#else
+			half fFocusRangeNearMin =  vDofParamsFocus1.y * saturate( 1 - (fCenterDepth) / vDofParamsFocus1.x) ;	
+		#endif
+			
+			fDepthBlur = (saturate( fFocusRangeNear * vDofParamsFocus1.z) + fFocusRangeFar)*vDofParamsFocus1.w;
+			
+			fDepthBlur *= 1; // this scale should come from game/design side
+
+			//fDepthBlur += fFocusRangeNearMin;
+			//if (GetShaderQuality() >= QUALITY_HIGH)
+				fDepthBlur = min( fDepthBlur, 3); // clamp to 3 range - avoid visible under-sampling
+			//else
+			//	fDepthBlur = min( fDepthBlur, 2); // clamp to 2 range - avoid visible under-sampling
+			
+			return saturate( fDepthBlur );
+		}
+		
+		float4 genDofBlurMaskPS(in VS_OUTPUT IN): COLOR
+		{
+			float mask = saturate( getBlendFactor(IN.baseTC.xy,focusPower)/* - 0.5f*/ );
+			//mask = pow( mask, 10.0 );
+			
+			//mask = mask > 0 ? mask + 0.5f : 0.0;
+			//mask *= 2.0f;
+			//mask = step( 0, mask );
+			
+		#if 1
+			return mask;
+		#else
+			return float4( mask,mask,mask,1 );
+		#endif
+		}
+		
+		// With rotated grid sampling (less artifacts). Used for image rescaling
+		float4 texToTexSampledPS(in float2 vScreenPosition : TEXCOORD0) : COLOR
+		{
+			float2 tc = vScreenPosition;
+			float2 tcOffset;
+			
+			float weightMask;
+			float weightSum = 0;
+			
+		#if 0
+			
+			float weight = saturate( tex2D( dofBlurMaskSampler,tc ).r );
+			clip( weight - 0.01f );
+			
+			//half4 _c0 = tex2D(s0p, tc);
+			
+			tcOffset = tc + texToTexParams0.xy;
+			weightMask 	= saturate( tex2D( dofBlurMaskSampler,tcOffset).r );
+			half4 _c1 = tex2D(s0p, tcOffset) * weightMask;
+			weightSum += weightMask;
+			
+			tcOffset = tc + texToTexParams0.zw;
+			weightMask 	= saturate( tex2D( dofBlurMaskSampler,tcOffset).r );
+			half4 _c2 = tex2D(s0p, tcOffset) * weightMask;
+			weightSum += weightMask;
+			
+			tcOffset = tc + texToTexParams1.xy;
+			weightMask 	= saturate( tex2D( dofBlurMaskSampler,tcOffset).r );
+			half4 _c3 = tex2D(s0p, tcOffset) * weightMask;
+			weightSum += weightMask;
+			
+			tcOffset = tc + texToTexParams1.zw;
+			weightMask 	= saturate( tex2D( dofBlurMaskSampler,tcOffset).r );
+			half4 _c4 = tex2D(s0p, tcOffset) * weightMask;
+			weightSum += weightMask;
+			
+			half4 color = ( _c1 + _c2 + _c3 + _c4 ) / weightSum;
+			
+			#if 1
+				//OUT.Color = (_c0 + _c1 + _c2 + _c3 + _c4) * 0.2h;
+				return saturate( color );
+			#else
+				return saturate( (_c0 * 0.2 + _c1 * 0.2 + _c2 * 0.2 + _c3 * 0.2 + _c4 * 0.2) - 0.5f );
+			#endif
+		
+		#else
+		
+			float weight = saturate( tex2D( s0p,tc ).a );
+			clip( weight - 0.01f );
+			
+			//half4 _c0 = tex2D(s0p, tc);
+			
+			tcOffset 	= tc + texToTexParams0.xy;
+			half4 _c1 	= tex2D(s0p, tcOffset);
+			weightMask 	= _c1.a;
+			_c1.rgb 	*= weightMask;
+			weightSum 	+= weightMask;
+			
+			tcOffset 	= tc + texToTexParams0.zw;
+			half4 _c2 	= tex2D(s0p, tcOffset);
+			weightMask 	= _c2.a;
+			_c2.rgb 	*= weightMask;
+			weightSum 	+= weightMask;
+			
+			tcOffset 	= tc + texToTexParams1.xy;
+			half4 _c3 	= tex2D(s0p, tcOffset);
+			weightMask 	= _c3.a;
+			_c3.rgb 	*= weightMask;
+			weightSum 	+= weightMask;
+			
+			tcOffset 	= tc + texToTexParams1.zw;
+			half4 _c4 	= tex2D(s0p, tcOffset);
+			weightMask 	= _c4.a;
+			_c4.rgb 	*= weightMask;
+			weightSum 	+= weightMask;
+			
+			half4 color = ( _c1 + _c2 + _c3 + _c4 ) / weightSum;
+			
+			#if 1
+				//OUT.Color = (_c0 + _c1 + _c2 + _c3 + _c4) * 0.2h;
+				return saturate( color );
+			#else
+				return saturate( (_c0 * 0.2 + _c1 * 0.2 + _c2 * 0.2 + _c3 * 0.2 + _c4 * 0.2) - 0.5f );
+			#endif
+		
+		#endif
+		}
+		
+		/// <summary>
+		/// Calculate the blur diameter to apply on the image.
+		/// b = (f * ms / N) * (xd / (Ds +- xd))
+		/// Where:
+		/// (Ds + xd) for background objects
+		/// (Ds - xd) for foreground objects
+		/// </summary>
+		/// <param name="d">Depth of the fragment.</param>
+		float GetBlurDiameter (float d)
+		{
+			// Convert from linear depth to metres
+			float Dd = d;
+			
+			// params.x = FocusDistance / params.y = BlurCoefficient / params.z = PPM(Pixels per millimetre)
+			float FocusDistance = params.x;
+			float BlurCoefficient = params.y;
+			float PPM = params.z;
+			float xd = abs(Dd - FocusDistance);
+			float xdd = (Dd < FocusDistance) ? (FocusDistance - xd) : (FocusDistance + xd);
+			float b = BlurCoefficient * (xd / xdd);
+			
+			return b * PPM;
+		}
+				
+		float4 BlurPS (in VS_OUTPUT IN): COLOR
+		{
+			float2 screenCoord = IN.baseTC.xy;
+			
+			#if 0
+			
+			// Maximum blur radius to limit hardware requirements.
+			// Cannot #define this due to a driver issue with some setups
+			const float MAX_BLUR_RADIUS = 10.0;
+
+			// Pass the linear depth values recorded in the depth map to the blur
+			// equation to find out how much each pixel should be blurred with the
+			// given camera settings.
+			float depth = linearizeDepth ( getDepth ( screenCoord ) );
+			float blurAmount = GetBlurDiameter(depth);
+			//blurAmount = min(floor(blurAmount), MAX_BLUR_RADIUS);
+
+			// Apply the blur
+			float count = 0.0;
+			float4 colour = 0.0;
+									
+			if ( blurAmount >= 1.0 )
+			{
+				float halfBlur = blurAmount * 0.5;
+				for (float i = 0.0; i < MAX_BLUR_RADIUS; ++i)
+				{
+					if ( i >= blurAmount )
+						break;
+					
+					float offset = i - halfBlur;
+					float2 vOffset = screenCoord + (texelOffset.xy * offset);
+
+					colour += tex2D(s0p, vOffset);
+					++count;
+				}
+			}
+						
+			#else
+			
+				// Apply the blur
+				float count = 0.0;
+				float4 colour = 0.0;
+				float halfBlur = 20 * 0.5;
+				
+				[loop]
+				for (float i = 0.0; i < 20; ++i)
+				{					
+					float offset = i - halfBlur;
+					float2 vOffset = screenCoord + (texelOffset.xy * offset);
+
+					colour += tex2D(s0p, vOffset);//tex2Dlod( s0p, float4( vOffset,0,0) );
+					++count;
+				}
+				
+			#endif
+			
+			return colour / count;
+		}
+		
+		/////////////////////////////////////////////////////////////////////////////////////
+		
+		float4 Bokeh_prepass_ps( in VS_OUTPUT IN ) : COLOR
+		{
+			float4 color = tex2D(s0p, IN.baseTC.xy);
+						
+            color = pow( color, power );
+			
+            return color;
+		}
+		
+		float4 Bokeh_Sample (in VS_OUTPUT IN, float2 delta)
+		{
+			/* randomize the lookup values to hide the fixed number of samples */
+            //float offset = random(vec3(delta, 151.7182), 0.0);
+            
+			const half jitterOffsets[31] = {
+				0.215168h, -0.243968h, 0.625509h, -0.623349h,
+				0.247428h, -0.224435h, -0.355875h, -0.00792976h,
+				-0.619941h, -0.00287403h, 0.238996h, 0.344431h,
+				0.627993h, -0.772384h, -0.212489h,0.769486h,
+				0.215168h, -0.243968h, 0.625509h, -0.623349h,
+				0.247428h, -0.224435h, -0.355875h, -0.00792976h,
+				-0.619941h, -0.00287403h, 0.238996h, 0.344431h,
+				0.627993h, -0.772384h, -0.212489h
+			};
+			
+            float4 color = 0;
+            float total = 0;
+			float weightMask = 0;
+			float2 offsetTC;
+			const half tapCount = 15.0h;
+            for (half t = 0.0; t <= tapCount; t++)
+			{
+                half percent = ( t/* + jitterOffsets[(int)t]*/ ) / tapCount;
+				
+				offsetTC = IN.baseTC.xy + delta * percent;
+				
+				weightMask = saturate( tex2D( dofBlurMaskSampler, offsetTC ).r );
+				
+				color += tex2D( s0p, offsetTC );//* weightMask;
+				
+                total += 1.0;
+            }
+            return color/total;
+		}
+		
+		float4 Bokeh_BlurPS_Pass0 (in VS_OUTPUT IN): COLOR
+		{
+			return Bokeh_Sample(IN,bokehDelta.xy);
+		}
+		
+		float4 Bokeh_BlurPS_Pass1 (in VS_OUTPUT IN): COLOR
+		{
+			return ( Bokeh_Sample(IN,bokehDelta.xy) + Bokeh_Sample(IN,bokehDelta.zw) ) * 0.5;
+		}
+		
+		float4 Bokeh_BlurPS_Pass2 (in VS_OUTPUT IN): COLOR
+		{
+			float4 color = ( Bokeh_Sample(IN,bokehDelta.zw) + 2.0 * tex2D(s1p, IN.baseTC.xy) ) / 3.0;
+            return pow(color, power);
+		}
+		
+		float4 Bokeh_ps (in VS_OUTPUT IN): COLOR
+		{
+			float2 screenCoord = IN.baseTC.xy;
+							
+			// Get the colour, depth, and blur pixels
+			float4 colour = tex2D(inputSampler, screenCoord);
+			float4 blur = tex2D(bluredSampler, screenCoord);
+			
+			// Linearly interpolate between the colour and blur pixels based on DOF
+			//float depth = linearizeDepth ( getDepth ( screenCoord ) );
+			//float blurAmount = GetBlurDiameter(depth);
+			//float lerp = min(blurAmount / 10.0, 1.0);
+			
+		#if 0
+			float lerp = saturate( getBlendFactor(screenCoord,focusPower) );
+		#else
+			float lerp = saturate( colour.a );			// optimization : use alpha as the dof blur mask
+		#endif
+			
+			// Blend
+			return float4( ( colour.rgb * (1.0 - lerp) ) + ( blur.rgb * lerp ), 1.0 ); // propagate alpha
+		}
+		
+		////////////////////////////////////////////////////////////////////////////
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float2 screenCoord = IN.baseTC.xy;
+			
+			// Maximum blur radius to limit hardware requirements.
+			// Cannot #define this due to a driver issue with some setups
+			const float MAX_BLUR_RADIUS = 10.0;
+				
+			// Get the colour, depth, and blur pixels
+			float4 colour = tex2D(inputSampler, screenCoord);
+			float4 blur = tex2D(bluredSampler, screenCoord);
+			
+			// Linearly interpolate between the colour and blur pixels based on DOF
+			float depth = linearizeDepth ( getDepth ( screenCoord ) );
+			float blurAmount = GetBlurDiameter(depth);
+			float lerp = min(blurAmount / MAX_BLUR_RADIUS, 1.0);
+			
+			return blur;
+			
+			// Blend
+			return ( colour * (1.0 - lerp) ) + ( blur * lerp );
+		}
+		
+		
+		
+	]]></code>
+	
+	<effect name="GenDofBlurMask">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<colorwrite_state>
+				<red value="false"/>
+				<green value="false"/>
+				<blue value="false"/>
+				<alpha value="true"/>
+			</colorwrite_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="genDofBlurMaskPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="textureToTextureResampled">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="texToTexSampledPS" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="Blur">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3rhw"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<pixelshader entry="BlurPS" target="ps_3_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="Bokeh_prepass">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="Bokeh_prepass_ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="Blur_Bokeh_0">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_3_0"/>
+			<pixelshader entry="Bokeh_BlurPS_Pass0" target="ps_3_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="Blur_Bokeh_1">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_3_0"/>
+			<pixelshader entry="Bokeh_BlurPS_Pass1" target="ps_3_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="Blur_Bokeh_2">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_3_0"/>
+			<pixelshader entry="Bokeh_BlurPS_Pass2" target="ps_3_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="Bokeh">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="Bokeh_ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

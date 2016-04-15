@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<param name="heightTexture" type="texture"/>
+	<param name="heightSampler" type="sampler2D">
+		<texture value="$heightTexture"/>
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="false"/>
+	</param>
+	<param name="brushTexture" type="texture"/>
+	<param name="brushSampler" type="sampler2D">
+		<texture value="$brushTexture"/>
+		<filter value="lln"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="false"/>
+	</param>
+	<param name="brushStrength" type="float"/>
+	<param name="invTextureSize" type="float2"/>
+
+	<code><![CDATA[
+		struct v2p
+		{
+			float4 position: POSITION;
+			float2 uvBrush: TEXCOORD0;
+			float2 uvHeight: TEXCOORD1;
+		};
+		
+		float4 ps (in v2p IN) : COLOR
+		{
+			float hBrush = tex2D(brushSampler, IN.uvBrush).r;
+			float hOrigin = tex2D(heightSampler, IN.uvHeight).r;
+			float h = hOrigin * 4.f;
+			h += tex2D(heightSampler, IN.uvHeight+float2(invTextureSize.x, 0.f)).r * 2.f;
+			h += tex2D(heightSampler, IN.uvHeight+float2(-invTextureSize.x, 0.f)).r * 2.f;
+			h += tex2D(heightSampler, IN.uvHeight+float2(0.f, invTextureSize.y)).r * 2.f;
+			h += tex2D(heightSampler, IN.uvHeight+float2(0.f, -invTextureSize.y)).r * 2.f;
+			h += tex2D(heightSampler, IN.uvHeight+invTextureSize).r;
+			h += tex2D(heightSampler, IN.uvHeight-invTextureSize).r;
+			h += tex2D(heightSampler, IN.uvHeight+float2(invTextureSize.x, -invTextureSize.y)).r;
+			h += tex2D(heightSampler, IN.uvHeight+float2(-invTextureSize.x, invTextureSize.y)).r;
+			h /= 16.f;
+			
+			float hResult = lerp(hOrigin, h, hBrush*brushStrength);
+			return float4(hResult, hResult, hResult, 1);
+		}
+
+	]]></code>
+	
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0"/>	
+				<stream semantec="texcoord1"/>
+			</streamdefine>
+			<depth_state>
+				<zfunc value="always"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+</material>
+

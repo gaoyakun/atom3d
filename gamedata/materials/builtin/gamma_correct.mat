@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<material auto="0">
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="inputTexture" type="texture"/>
+	<param name="inputSampler" type="sampler2D">
+		<texture value="$inputTexture"/>
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="true" />
+	</param>
+	<param name="nogammareadSampler" type="sampler2D">
+		<texture value="$inputTexture"/>
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+	</param>
+	<code>
+          <![CDATA[
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		
+		VS_OUTPUT vs(in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			OUT.position = mul(float4(IN.position, 1.0), MVP);
+			OUT.tex0 = IN.tex0;
+			return OUT;
+		}
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float4 vSample = tex2D(inputSampler,IN.tex0);
+			
+			vSample.a = dot(vSample.rgb, float3(0.299, 0.587, 0.114));
+			
+			return vSample;
+		}
+		
+		float4 ps_no_gamma_read (in VS_OUTPUT IN): COLOR
+		{
+			float4 vSample = saturate( tex2D(nogammareadSampler,IN.tex0) );
+			vSample.a = dot(vSample.rgb, float3(0.299, 0.587, 0.114));
+			return vSample;
+		}
+	]]></code>
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+	<effect name="no_gamma_read">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_no_gamma_read" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>

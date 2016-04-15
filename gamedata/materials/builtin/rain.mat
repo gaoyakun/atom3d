@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<material auto="0">	
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+	<param name="MVP" type="float4x4" default="$MVP_Matrix"/>
+	<param name="vpMatrix" type="float4x4" default="$ViewProjection_Matrix"/>
+	<param name="sceneRainParams" type="float4" default="1,1,0,0" editortype="none"/>
+	<param name="texTilingFactor" type="float4" default="0.15,0.15,1,1" />
+	<param name="eyeWorldPos" type="float3"/>
+	<param name="EyePos" type="float3" default="$WorldSpaceEye" />
+	<param name="Time" type="float" default="$TimeInSecond" />
+	<param name="rainFallTexture" type="texture"/>
+	<param name="inputTexture" type="texture"/>
+	<param name="rainRTTexture" type="texture"/>
+	<param name="rainFallSampler" type="sampler2D">
+		<texture value="$rainFallTexture"/>
+		<filter value="lll"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+		<srgb value="true"/>
+	</param>
+	<param name="inputSampler" type="sampler2D">
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<texture value="$inputTexture"/>
+		<srgb value="true" />
+	</param>
+	<param name="rainRTSampler" type="sampler2D">
+		<filter value="lln"/>
+		<texture value="$rainRTTexture"/>
+	</param>
+	
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+		struct vtxOutRain
+		{
+			float4 HPosition    : POSITION;
+			float4 tcProj       : TEXCOORD0;
+			float4 baseTC       : TEXCOORD1;
+			float4 baseTC2      : TEXCOORD2;
+			float4 blendWeights : TEXCOORD3;
+		};
+		
+		struct pixout_rain
+		{
+			float4 Color : COLOR;
+		};
+
+		void vs_rain_gen (in a2v IN, out vtxOutRain OUT)
+		{
+			half4 vPos = IN.position;
+			half3 vCone = vPos.xyz;
+			half3 vWVPos = EyePos.xyz;
+			  
+			if ( vPos.y == 1 )
+			{
+				//vCone.y = 8 * (1 + sceneRainParams.z);
+				//vCone.xz *= 0.01h;//sceneRainParams.z;
+				
+				vWVPos.xz += 1.h * half2( sin( Time + sceneRainParams.w ), cos( Time + sceneRainParams.w ) );
+				
+				//vCone.y = 800;
+				vCone.xz *= 0.01h;// * sceneRainParams.z;
+			}			
+			
+			vCone.y *= 400;
+			vCone.xz *= sceneRainParams.w;
+
+			OUT.blendWeights.z = saturate( 0.5 - vPos.y * 0.5 );
+
+			// position for using correct depth test to exclude weapons
+			vPos.xyz = vCone.xyz + vWVPos.xyz;
+			vPos.y -= 200.0f;
+
+			OUT.HPosition = mul(float4(vPos.xyz,1),vpMatrix);
+		
+			float4 ScrTC = OUT.HPosition;
+			ScrTC.xy = (ScrTC.xy * float2(1,-1) + ScrTC.ww  ) * 0.5;
+			
+			// No offsets required in d3d10
+			//ScrTC.xy += g_VS_ScreenSize.zw * HPos.w;
+			OUT.tcProj = ScrTC;
+	
+			half4 vBaseTC 		= vCone.zyxy * texTilingFactor.xyxy;
+			OUT.blendWeights.xy = abs(normalize(vCone.xz));
+			OUT.blendWeights.xy *= OUT.blendWeights.xy;
+			OUT.blendWeights.xy *= OUT.blendWeights.xy;
+
+			const half4 vAnim = Time * half4(0.1h, 1.25h, -0.2h, 1.875h) * sceneRainParams.x;
+			OUT.baseTC.xy = 1.5h * vBaseTC.xy + vAnim.xy;
+			OUT.baseTC.zw = 3.h * vBaseTC.zw + vAnim.xy;
+			OUT.baseTC2.xy = vBaseTC.xy + vAnim.zw + 0.2h;
+			OUT.baseTC2.zw = 2.h * vBaseTC.zw + vAnim.zw + 0.2h;
+			
+			//OUT.baseTC = vBaseTC;
+		}
+		
+		pixout_rain ps_rain_gen (in vtxOutRain IN)
+		{
+			pixout_rain OUT = (pixout_rain)0;
+			  
+			const half cDepth = linearizeDepth (getDepth (IN.tcProj.xy/IN.tcProj.w));
+			const half fSoftIsec = saturate((cDepth-IN.tcProj.w) / 50.0);
+			// soft intersection with depth, attenuate top to minimize artefacts, and soften bottom
+			const half fAtten = 0.2h * fSoftIsec * saturate(IN.blendWeights.z) * saturate((1.h - IN.blendWeights.z));
+
+			OUT.Color = tex2D(rainFallSampler, IN.baseTC.xy) * IN.blendWeights.x;
+			OUT.Color += tex2D(rainFallSampler, IN.baseTC.zw) * IN.blendWeights.y;
+			OUT.Color += tex2D(rainFallSampler, IN.baseTC2.xy) * IN.blendWeights.x;
+			OUT.Color += tex2D(rainFallSampler, IN.baseTC2.zw) * IN.blendWeights.y;
+			
+			OUT.Color *= sceneRainParams.y;
+			//OUT.Color.rgb *= sceneRainParams.x;
+			OUT.Color.rgb *= fAtten;
+	
+			float intensity = saturate( dot(OUT.Color.rgb, 0.333h) );
+			OUT.Color.rgb = intensity;
+			OUT.Color.a = intensity;
+
+			return OUT;
+		}
+		
+		struct VS_INPUT
+		{
+			float3 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		struct VS_OUTPUT
+		{
+			float4 position : POSITION;
+			float2 tex0 : TEXCOORD0;
+		};
+		
+		VS_OUTPUT vs (in VS_INPUT IN)
+		{
+			VS_OUTPUT OUT;
+			OUT.position = mul(float4(IN.position, 1.0), MVP);
+			OUT.tex0 = IN.tex0;
+			return OUT;
+		}
+		
+		float4 ps (in VS_OUTPUT IN): COLOR
+		{
+			float4 input = tex2D( inputSampler, IN.tex0 );
+			float4 rain = tex2D( rainRTSampler, IN.tex0 ); 
+			return float4(input.rgb+rain.rgb, input.a);
+		}
+		
+	]]></code>
+	
+	<effect name="rainGen">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="one"/>
+				<destblend value="one"/>
+			</alphablend_state>
+			<vertexshader entry="vs_rain_gen" target="vs_2_0"/>
+			<pixelshader entry="ps_rain_gen" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default">
+		<pass>
+			<streamdefine>
+				<stream semantec="position" type="float3"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="none"/>
+			</rasterizer_state>
+			<depth_state>
+				<zfunc value="always" />
+				<zwrite value="false" />
+			</depth_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0"/>
+		</pass>
+	</effect>
+</material>
+

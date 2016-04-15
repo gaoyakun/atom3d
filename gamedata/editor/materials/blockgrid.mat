@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<param name="VPMatrix" type="float4x4" default="$ViewProjection_Matrix"/>
+	<param name="uvCoordScaleBias" type="float4" default="$Deferred_ScreenCoordScaleBias"/>
+	<param name="heightTexture" type="texture"/>
+	<param name="heightSampler" type="sampler2D">
+		<texture value="$heightTexture"/>
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="false"/>
+	</param>
+	<param name="diffuseTexture" type="texture"/>
+	<param name="diffuseSampler" type="sampler2D">
+		<texture value="$diffuseTexture"/>
+		<filter value="ppn"/>
+		<addressu value="clamp"/>
+		<addressv value="clamp"/>
+		<srgb value="false"/>
+	</param>
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+		struct v2p
+		{
+			float4 position: POSITION;
+			float2 uv: TEXCOORD0;
+		};
+		
+		void vs (in a2v IN, out v2p OUT)
+		{
+			float2 uv = IN.uv;
+			uv = uv * uvCoordScaleBias.xy + uvCoordScaleBias.zw;
+			float3 worldPos = tex2Dlod(heightSampler, float4(uv,0,0)).rgb;
+			worldPos.y += 0.2;
+			OUT.position = mul(float4(worldPos, 1), VPMatrix);
+			OUT.uv = IN.uv;
+		}
+		
+		float4 ps (in v2p IN) : COLOR
+		{
+			float2 uv = IN.uv;
+			uv = uv * uvCoordScaleBias.xy + uvCoordScaleBias.zw;
+			return tex2Dlod(diffuseSampler, float4(uv,0,0));
+		}
+
+	]]></code>
+	
+	<effect name="default" scheme="deferred" schemelayer="forward">
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="front"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_3_0"/>
+			<pixelshader entry="ps" target="ps_3_0" />
+		</pass>
+	</effect>
+</material>
+

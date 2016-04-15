@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="gb2312" ?>
+<UI version="1">
+    <component type="dialog" name="DlgEditRegion" rect="279,65,476,326" id="100" imageid="1" style="3" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="vertical" layout_gap="0" layout_spc="4,4,4,8" fontcolor="-1" outlinecolor="-939524096">
+        <imagelist>
+            <image id="700" type="2" normal="-16711681" hover="-16711681" hold="-16711681" disabled="-16711681" />
+        </imagelist>
+        <properties>
+            <property name="ButtonHilightImage" type="int" value="700" />
+        </properties>
+        <component type="label" name="label1" rect="61,201,-100,24" imageid="1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="编辑区域" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        <component type="combobox" name="cbRegionType" rect="49,6,-100,30" id="101" imageid="1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="0,0,0,8" fontcolor="-1" outlinecolor="-939524096" buttonwidth="18" buttonimage="19" buttonborder="1" dropdownheight="100" dropdownimage="1" dropdownitemheight="24" dropdownhilightimage="600" dropdownborder="1" editimage="0" editborder="2">
+            <imagelist>
+                <image id="600" type="2" normal="-16305730" hover="-16305730" hold="-16305730" disabled="-16305730" />
+            </imagelist>
+        </component>
+        <component type="listview" name="lvHeader" rect="-40,225,-100,24" id="107" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="0,4,0,4" fontcolor="-1" outlinecolor="-939524096" columnc="0" columnw="50" rowc="0" rowh="50" selimage="-1" handleimage="-2" ubimage="-2" dbimage="-2" scrollBarBkImage="-2" bkImage="-1" hoverImage="-1" buttonLength="16" sliderWidth="16" sliderLength="16" />
+        <component type="listview" name="lvRegionList" rect="45,44,-100,-100" id="102" imageid="600" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="0,0,0,0" fontcolor="-1" outlinecolor="-939524096" columnc="0" columnw="50" rowc="0" rowh="50" selimage="-1" handleimage="-2" ubimage="-2" dbimage="-2" scrollBarBkImage="-2" bkImage="-1" hoverImage="-1" buttonLength="16" sliderWidth="16" sliderLength="16">
+            <imagelist>
+                <image id="600" type="2" normal="-69440" hover="-69440" hold="-69440" disabled="-69440" />
+            </imagelist>
+        </component>
+        <component type="spacer" name="spacer1" rect="0,156,-100,30" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,8,4,0" fontcolor="-1" outlinecolor="-939524096">
+            <component type="button" name="btnNewRegion" rect="-1,4,45,24" id="103" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="新建" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnDeleteRegion" rect="104,4,45,24" id="104" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="删除" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnRegionProps" rect="119,4,45,24" id="105" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="属性.." alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnLoad" rect="-28,11,45,24" id="108" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="载入.." alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnSave" rect="434,7,45,24" id="109" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="保存.." alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnExport" rect="217,10,95,24" id="110" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="导出当前类型.." alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="spacer" name="spacer2" rect="119,-59,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" />
+            <component type="button" name="btnClose" rect="317,2,60,24" id="106" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" eventtransition="0" text="关闭" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+    </component>
+</UI>

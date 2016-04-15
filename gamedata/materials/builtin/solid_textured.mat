@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<material auto="1">
+	<include filename="/materials/builtin/deferredrendering.inc"/>
+  <param name="hasVertexColor" type="int" />
+  <param name="enableAlphaBlend" type="int" />
+  <param name="srcblend" type="int" />
+  <param name="destblend" type="int" />
+  <param name="blendcolor" type="float4" />
+  <param name="enableAlphaTest" type="int" />
+  <param name="alphaRef" type="float" />
+  <param name="cullmode" type="int" />
+	<param name="diffuseTexture" type="texture" />
+	<param name="diffuseSampler" type="sampler2D" />
+	<param name="diffuseColor" type="float4" default="1.0,1.0,1.0,1.0" />
+  <param name="MVP" type="float4x4" default="$MVP_Matrix" />
+	<param name="worldview" type="float4x4" />
+		
+	<code>
+    <![CDATA[
+    struct a2v_t
+    {
+      float4 position: POSITION;
+      float2 tex0: TEXCOORD0;
+    };
+    
+    struct v2p_t
+    {
+      float4 position: POSITION;
+      float4 diffuse: COLOR0;
+      float2 tex0: TEXCOORD0;
+    };
+    
+		void vs_t (in a2v_t IN, out v2p_t OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.diffuse = diffuseColor;
+			OUT.tex0 = IN.tex0;
+		}
+		
+		float4 ps_t (in v2p_t IN) : COLOR0
+		{
+			return tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+		}				
+    
+		struct a2v_t_vc
+		{
+		  float4 position: POSITION;
+		  float4 diffuse: COLOR0;
+		  float2 tex0: TEXCOORD0;
+		};
+    
+		void vs_t_vc (in a2v_t_vc IN, out v2p_t OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.tex0 = IN.tex0;
+		}
+		
+		struct a2v
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		struct v2p
+		{
+			float4 position: POSITION;
+			float4 diffuse: COLOR0;
+			float2 tex0: TEXCOORD0;
+			float3 viewpos: TEXCOORD1;
+			float3 normal: TEXCOORD2;
+		};
+		
+		void vs (in a2v IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview);
+			OUT.diffuse = diffuseColor;
+			OUT.tex0 = IN.tex0;
+			OUT.normal = mul(IN.normal, (float3x3)worldview);
+		}
+		
+		void ps (in v2p IN, out Gbuffer_PSOutput OUT)
+		{
+			resetGbufferLayout (OUT);
+			float4 color = tex2D(diffuseSampler, IN.tex0) * IN.diffuse;
+			storeAlbedoAndGlossness (float4(color.rgb, 1.0), OUT);
+			storeNormalAndSpecularPower (float4(IN.normal, 64.0), OUT);
+		}				
+    
+		struct a2v_vc
+		{
+			float4 position: POSITION;
+			float4 diffuse: COLOR0;
+			float3 normal: NORMAL;
+			float2 tex0: TEXCOORD0;
+		};
+		
+		void vs_vc (in a2v_vc IN, out v2p OUT)
+		{
+			OUT.position = mul(IN.position, MVP);
+			OUT.viewpos = mul(IN.position, worldview);
+			OUT.diffuse = diffuseColor * IN.diffuse;
+			OUT.tex0 = IN.tex0;
+			OUT.normal = mul(IN.normal, (float3x3)worldview);
+		}
+				
+    ]]>
+  </code>
+	
+	<effect name="noAlphaBlend" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+    </requirements>
+    <pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0" type="float2"/>
+			</streamdefine>
+      <alphatest_state>
+        <enable value="$enableAlphaTest"/>
+        <alphafunc value="greater"/>
+        <alpharef value="$alpharef"/>
+      </alphatest_state>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+
+  <effect name="noAlphaBlend_vc" scheme="deferred" schemelayer="GbufferConstruction">
+    <requirements>
+      <eq param="enableAlphaBlend" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <alphatest_state>
+        <enable value="$enableAlphaTest"/>
+        <alphafunc value="greater"/>
+        <alpharef value="$alpharef"/>
+      </alphatest_state>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_vc" target="vs_2_0"/>
+      <pixelshader entry="ps" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="alphaBlend" scheme="deferred" schemelayer="Forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <eq param="hasVertexColor" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <alphatest_state>
+        <enable value="$enableAlphaTest"/>
+        <alphafunc value="greater"/>
+        <alpharef value="$alpharef"/>
+      </alphatest_state>
+      <alphablend_state>
+        <enable value="true"/>
+        <srcblend value="$srcblend"/>
+        <destblend value="$destblend"/>
+        <blendcolor value="$blendcolor"/>
+      </alphablend_state>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_t" target="vs_2_0"/>
+      <pixelshader entry="ps_t" target="ps_2_0" />
+    </pass>
+  </effect>
+
+  <effect name="alphaBlend_vc" scheme="deferred" schemelayer="Forward">
+    <requirements>
+      <ne param="enableAlphaBlend" value="0"/>
+      <ne param="hasVertexColor" value="0"/>
+    </requirements>
+    <pass>
+      <streamdefine>
+        <stream semantec="position"/>
+        <stream semantec="color0"/>
+        <stream semantec="normal"/>
+        <stream semantec="texcoord0" type="float2"/>
+      </streamdefine>
+      <alphatest_state>
+        <enable value="$enableAlphaTest"/>
+        <alphafunc value="greater"/>
+        <alpharef value="$alpharef"/>
+      </alphatest_state>
+      <alphablend_state>
+        <enable value="true"/>
+        <srcblend value="$srcblend"/>
+        <destblend value="$destblend"/>
+        <blendcolor value="$blendcolor"/>
+      </alphablend_state>
+      <rasterizer_state>
+        <cullmode value="$cullmode"/>
+      </rasterizer_state>
+      <vertexshader entry="vs_t_vc" target="vs_2_0"/>
+      <pixelshader entry="ps_t" target="ps_2_0" />
+    </pass>
+  </effect>
+  
+</material>
+

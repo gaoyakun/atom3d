@@ -1,0 +1,443 @@
+<?xml version="1.0"?>
+<material auto="1">	
+	<include filename="/materials/builtin/forward/forwardrendering.inc" />
+	
+	<param name="diffuseColor" type="float4" default="1.0,1.0,1.0,1.0" editortype="color"/>
+	<param name="World" type="float4x4" default="$World_Matrix" />
+	<param name="MVP" type="float4x4" default="$MVP_Matrix" />
+	<param name="VP" type="float4x4" default="$ViewProjection_Matrix" />
+	<param name="worldview" type="float4x4" default="$WorldView_Matrix"/>
+	<param name="diffuseTexture" type="texture" editortype="none"/>
+	<param name="enableAlphaBlend" type="int" default="0" editortype="bool"/>
+	<param name="hasTexture" type="int" default="0" editortype="bool"/>
+	<param name="srcBlend" type="int" default="5" editortype="e_blendfunc"/>
+	<param name="destBlend" type="int" default="6" editortype="e_blendfunc"/>
+	<param name="cullmode" type="int" default="3" editortype="e_cullmode"/>
+	<param name="transparency" type="float" default="1"/>
+	<param name="colorMultiplier" type="float" default="1"/>
+	<param name="zfunc" type="int" default="4" editortype="e_comparefunc"/>
+	<param name="uvScaleOffset" type="float4" default="1,1,0,0" editortype="none"/>
+	<param name="uvRotation" type="float" default="0" editortype="none"/>
+	<param name="sequence" type="int" default="0" editortype="none"/>
+	<param name="timestamp" type="float" default="$TimeInSecond"/>
+	<param name="frameParams" type="float4" editortype="none"/>
+	<param name="projectable" type="int" default="0" editortype="bool" />
+	<param name="diffuseSampler" type="sampler2D">
+		<texture value="$diffuseTexture"/>
+		<filter value="anisotropic"/>
+		<addressu value="wrap"/>
+		<addressv value="wrap"/>
+		<srgb value="true"/>
+	</param>
+	<param name="perturbation" type="int" default="0" editortype="none"/>
+	<code><![CDATA[
+		struct a2v
+		{
+			float4 position: POSITION;
+			float3 normal: NORMAL;
+			float2 uv: TEXCOORD0;
+		};
+		
+		/////////////////////////////////////////////////////////////////
+		
+		struct v2p
+		{
+			float4 position	: POSITION;
+			float2 uv		: TEXCOORD0;
+			float3 normal	: TEXCOORD1;
+			float4 fog 		: TEXCOORD2;
+		};
+		
+		struct v2p_notex
+		{
+			float4 position	: POSITION;
+			float3 normal	: TEXCOORD0;
+			float4 fog 		: TEXCOORD1;		
+		};
+
+		struct v2p_blend_notex
+		{
+			float4 position	: POSITION;
+			float4 fog 		: TEXCOORD0;
+		};
+
+		float2 uv_transform (float rotation, float4 scaleoffset, float2 v)
+		{
+			float s;
+			float c;
+			sincos(rotation, s, c);
+			float3 rc1 = float3(c, s, 0.5*(1.0-c-s));
+			float3 rc2 = float3(-s, c, 0.5*(1.0-c+s));
+			float3 uv = float3(v, 1.0);
+			return float2(dot(rc1, uv), dot(rc2, uv))*scaleoffset.xy+scaleoffset.zw;
+		}
+
+		float4 sample_seq (float2 uv)
+		{
+			int frame = fmod(timestamp/frameParams.z, frameParams.x);
+			float2 scale = float2(frameParams.y, 1);
+			float2 offset = float2(frame*frameParams.y, 0);
+			return tex2D(diffuseSampler, uv*scale+offset);
+		}
+
+		void vs (in a2v IN, out v2p OUT)
+		{
+		#if 0
+			float4 worldps = mul( IN.position, World );	
+			worldps.w = 1.0;
+			OUT.position = mul(worldps, VP);
+		#else
+			OUT.position = mul(IN.position, MVP);
+		#endif		
+			OUT.uv 		= uv_transform(uvRotation, uvScaleOffset, IN.uv);
+			OUT.normal 	= mul(IN.normal, (float3x3)worldview);
+			OUT.fog		= CalcFog(OUT.position.w);
+		}
+		
+		float4 ps (in v2p IN) : COLOR0
+		{			
+			float4 color = float4( diffuseColor.rgb * tex2D(diffuseSampler, IN.uv).rgb, 1 ) * DiffuseLighting(normalize(IN.normal), 1 );
+			color.a = 1;
+			
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+
+		float4 ps_seq (in v2p IN) : COLOR0
+		{	
+			float4 color = float4( diffuseColor.rgb * sample_seq(IN.uv).rgb, 1 ) * DiffuseLighting(normalize(IN.normal), 1 );
+			color.a = 1;
+			
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+
+		void vs_notex (in a2v IN, out v2p_notex OUT)
+		{
+		#if 0
+			float4 worldps = mul( IN.position, World );
+			worldps.w = 1.0;
+			OUT.position = mul(worldps, VP);
+		#else
+			OUT.position = mul(IN.position, MVP);
+		#endif
+			OUT.normal 	= mul(IN.normal, (float3x3)worldview);
+			OUT.fog		= CalcFog(OUT.position.w);
+		}
+		
+		float4 ps_notex (in v2p_notex IN) : COLOR0
+		{
+			float4 color = float4( diffuseColor.rgb, 1 ) * DiffuseLighting(normalize(IN.normal), 1 );
+			color.a = 1;
+			
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+		
+		/////////////////////////////////////// blend effect /////////////////////////////////////////////
+
+		float4 ps_blend (in v2p IN): COLOR0
+		{
+			float4 color =	diffuseColor * 
+							tex2D(diffuseSampler, IN.uv) * 
+							float4(colorMultiplier, colorMultiplier, colorMultiplier, transparency);
+							
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+
+		float4 ps_blend_seq (in v2p IN): COLOR0
+		{
+			float4 color = diffuseColor * sample_seq(IN.uv) * float4(colorMultiplier, colorMultiplier, colorMultiplier, transparency);
+			
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+
+		void vs_blend_notex (in a2v IN, out v2p_blend_notex OUT)
+		{
+		#if 0
+			float4 worldps = mul( IN.position, World );	
+			worldps.w = 1.0;
+			OUT.position = mul(worldps, VP);
+		#else
+			OUT.position = mul(IN.position, MVP);
+		#endif
+			OUT.fog		= CalcFog(OUT.position.w);
+		}
+		
+		float4 ps_blend_notex (in v2p_blend_notex IN): COLOR0
+		{
+			float4 color = diffuseColor * float4(colorMultiplier, colorMultiplier, colorMultiplier, transparency);
+			
+			ApplyFog( color, IN.fog );
+			
+			return color;
+		}
+			
+	]]></code>
+	
+	<effect name="default" scheme="custom" schemelayer="Solid">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0"/>
+			<ne param="hasTexture" value="0"/>
+			<eq param="sequence" value="0"/>
+			<eq param="projectable" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_projectable" scheme="custom" schemelayer="Solid">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0"/>
+			<ne param="hasTexture" value="0"/>
+			<eq param="sequence" value="0"/>
+			<ne param="projectable" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<stencil_state>
+				<enable value="true"/>
+				<twosided value="true"/>
+		                <readmask value="128"/>
+                		<writemask value="128"/>
+		                <ref value="128"/>
+                		<func_front value="always"/>
+		                <failop_front value="keep"/>
+		                <zfailop_front value="keep"/>
+                		<passop_front value="replace"/>
+		                <func_back value="always"/>
+                		<failop_back value="keep"/>
+		                <zfailop_back value="keep"/>
+		                <passop_back value="replace"/>
+		        </stencil_state>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_seq" scheme="custom" schemelayer="Solid">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0"/>
+			<ne param="hasTexture" value="0"/>
+			<ne param="sequence" value="0"/>
+			<eq param="projectable" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_seq" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_seq_projectable" scheme="custom" schemelayer="Solid">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0"/>
+			<ne param="hasTexture" value="0"/>
+			<ne param="sequence" value="0"/>
+			<ne param="projectable" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<stencil_state>
+				<enable value="true"/>
+				<twosided value="true"/>
+		                <readmask value="128"/>
+                		<writemask value="128"/>
+		                <ref value="128"/>
+                		<func_front value="always"/>
+		                <failop_front value="keep"/>
+		                <zfailop_front value="keep"/>
+                		<passop_front value="replace"/>
+		                <func_back value="always"/>
+                		<failop_back value="keep"/>
+		                <zfailop_back value="keep"/>
+		                <passop_back value="replace"/>
+		        </stencil_state>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_seq" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_notex" scheme="custom" schemelayer="Solid">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0"/>
+			<eq param="hasTexture" value="0"/>
+			<eq param="projectable" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+			</streamdefine>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_notex" target="vs_2_0"/>
+			<pixelshader entry="ps_notex" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_notex_projectable" scheme="custom" schemelayer="Solid">
+		<requirements>
+			<eq param="enableAlphaBlend" value="0"/>
+			<eq param="hasTexture" value="0"/>
+			<ne param="projectable" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+			</streamdefine>
+			<stencil_state>
+				<enable value="true"/>
+				<twosided value="true"/>
+		                <readmask value="128"/>
+                		<writemask value="128"/>
+		                <ref value="128"/>
+                		<func_front value="always"/>
+		                <failop_front value="keep"/>
+		                <zfailop_front value="keep"/>
+                		<passop_front value="replace"/>
+		                <func_back value="always"/>
+                		<failop_back value="keep"/>
+		                <zfailop_back value="keep"/>
+		                <passop_back value="replace"/>
+		        </stencil_state>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_notex" target="vs_2_0"/>
+			<pixelshader entry="ps_notex" target="ps_2_0" />
+		</pass>
+	</effect>
+	
+	
+	
+	<effect name="default_blend" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableAlphaBlend" value="0"/>
+			<ne param="hasTexture" value="0"/>
+			<eq param="sequence" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="$srcBlend"/>
+				<destblend value="$destBlend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_blend" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_blend_seq" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableAlphaBlend" value="0"/>
+			<ne param="hasTexture" value="0"/>
+			<ne param="sequence" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="$srcBlend"/>
+				<destblend value="$destBlend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs" target="vs_2_0"/>
+			<pixelshader entry="ps_blend_seq" target="ps_2_0" />
+		</pass>
+	</effect>
+	<effect name="default_blend_notex" scheme="custom" schemelayer="Transparent">
+		<requirements>
+			<ne param="enableAlphaBlend" value="0"/>
+			<eq param="hasTexture" value="0"/>
+			<eq param="perturbation" value="0"/>
+		</requirements>
+		<pass>
+			<streamdefine>
+				<stream semantec="position"/>
+				<stream semantec="normal"/>
+				<stream semantec="texcoord0"/>
+			</streamdefine>
+			<alphablend_state>
+				<enable value="true"/>
+				<srcblend value="$srcBlend"/>
+				<destblend value="$destBlend"/>
+			</alphablend_state>
+			<depth_state>
+				<zfunc value="$zfunc"/>
+				<zwrite value="false"/>
+			</depth_state>
+			<rasterizer_state>
+				<cullmode value="$cullmode"/>
+			</rasterizer_state>
+			<vertexshader entry="vs_blend_notex" target="vs_2_0"/>
+			<pixelshader entry="ps_blend_notex" target="ps_2_0" />
+		</pass>
+	</effect>
+	
+</material>
+

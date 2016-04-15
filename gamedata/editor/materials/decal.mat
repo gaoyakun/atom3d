@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<material auto="1">
+  <include filename="/materials/builtin/deferredrendering.inc"/>
+  <param name="MVP" type="float4x4" default="$MVP_Matrix" />
+  <param name="isMask" type="int" />
+  <param name="isArrow" type="int" />
+  <param name="invWorldView" type="float4x4" default="$Inv_WorldView_Matrix" />
+  <param name="invView" type="float4x4" default="$Inv_View_Matrix" />
+  <param name="enableBlend" type="int" />
+  <param name="srcBlendFunc" type="int" />
+  <param name="destBlendFunc" type="int" />
+  <param name="decalColor" type="float4"/>
+  <param name="decalTexture" type="texture"/>
+  <param name="decalSampler" type="sampler2D">
+    <filter value="lln" />
+    <addressu value="clamp" />
+    <addressv value="clamp" />
+    <texture value="$decalTexture" />
+    <srgb value="true" />
+  </param>
+  <param name="decalTexture2" type="texture"/>
+  <param name="decalSampler2" type="sampler2D">
+    <filter value="lln" />
+    <addressu value="clamp" />
+    <addressv value="clamp" />
+    <texture value="$decalTexture2" />
+    <srgb value="true" />
+  </param>
+  <param name="decalMask" type="texture"/>
+  <param name="maskSampler" type="sampler2D">
+    <filter value="lln" />
+    <addressu value="clamp" />
+    <addressv value="clamp" />
+    <texture value="$decalMask" />
+    <srgb value="false" />
+  </param>
+  <code>
+    <![CDATA[
+    struct VSInput
+    {
+      float4 position : POSITION;
+    };
+    struct VSOutput
+    {
+      float4 position : POSITION;
+      float4 uv : TEXCOORD0;
+    };
+    VSOutput vs (in VSInput IN)
+    {
+      VSOutput output;
+      output.position = mul(IN.position, MVP);
+      output.uv = getTexCoordFromClipSpace (output.position);
+      return output;
+    }
+    float4 psMask (in VSOutput IN) : COLOR0
+    {
+      float2 uv = IN.uv.xy/IN.uv.w;
+      float3 eyedir = getEyeDirFromTexCoord (uv);
+      float3 eyePos = getEyePosFromTexCoord (uv, eyedir);
+      float3 objPos = mul(float4(eyePos, 1.0), invWorldView).xyz;
+      if (objPos.x < -0.5 || objPos.x > 0.5 || objPos.z < -0.5 || objPos.z > 0.5)
+      {
+	discard;
+      }
+      float2 uvDecal = objPos.xz + 0.5;
+      uvDecal.y = 1.0 - uvDecal.y;
+      float4 c = tex2D(decalSampler, uvDecal);
+      float4 m = tex2D(maskSampler, uvDecal);
+      return float4(c.rgb*decalColor.rgb, m.r*decalColor.a);
+    }
+    float4 psArrow (in VSOutput IN) : COLOR0
+    {
+      float2 uv = IN.uv.xy/IN.uv.w;
+      float3 eyedir = getEyeDirFromTexCoord (uv);
+      float3 eyePos = getEyePosFromTexCoord (uv, eyedir);
+      float3 objPos = mul(float4(eyePos, 1.0), invWorldView).xyz;
+      if (objPos.x < -0.5 || objPos.x > 0.5 || objPos.z < -0.5 || objPos.z > 0.5)
+      {
+	discard;
+      }
+      float2 uvDecal = objPos.xz + 0.5;
+      uvDecal.y = 1.0 - uvDecal.y;
+      float3 c = tex2D(decalSampler, uvDecal).rgb * decalColor.rgb;
+      float4 m = tex2D(decalSampler2, uvDecal);
+      float3 clr = lerp(c, 1-c, m.a);
+      return float4(clr, decalColor.a);
+    }
+    ]]>
+  </code>
+  <effect name="mask" scheme="deferred" schemelayer="forward">
+	<requirements>	
+		<ne param="isMask" value="0"/>
+	</requirements>
+	<pass>
+		<streamdefine>
+			<stream semantec="position"/>
+		</streamdefine>
+		<depth_state>
+			<zfunc value="always"/>
+			<zwrite value="false"/>
+		</depth_state>
+		<stencil_state>
+			<enable value="true"/>
+			<twosided value="true"/>
+			<readmask value="128"/>
+			<writemask value="0"/>
+			<ref value="128"/>
+		        <func_back value="equal"/>
+		        <failop_back value="keep"/>
+			<zfailop_back value="keep"/>
+			<passop_back value="keep"/>
+		</stencil_state>
+		<rasterizer_state>
+			<cullmode value="front"/>
+		</rasterizer_state>
+		<alphablend_state>
+			<enable value="$enableBlend"/>
+			<srcblend value="$srcBlendFunc"/>
+			<destblend value="$destBlendFunc"/>
+		</alphablend_state>
+		<vertexshader entry="vs" target="vs_2_0" />
+		<pixelshader entry="psMask" target="ps_2_0" />
+	</pass>
+  </effect>
+  <effect name="arrow" scheme="deferred" schemelayer="forward">
+	<requirements>	
+		<ne param="isArrow" value="0"/>
+	</requirements>
+	<pass>
+		<streamdefine>
+			<stream semantec="position"/>
+		</streamdefine>
+		<depth_state>
+			<zfunc value="always"/>
+			<zwrite value="false"/>
+		</depth_state>
+		<stencil_state>
+			<enable value="true"/>
+			<readmask value="128"/>
+			<writemask value="0"/>
+			<ref value="128"/>
+		        <func_front value="equal"/>
+		        <failop_front value="keep"/>
+			<zfailop_front value="keep"/>
+			<passop_front value="keep"/>
+		</stencil_state>
+		<rasterizer_state>
+			<cullmode value="front"/>
+		</rasterizer_state>
+		<alphablend_state>
+			<enable value="$enableBlend"/>
+			<srcblend value="$srcBlendFunc"/>
+			<destblend value="$destBlendFunc"/>
+		</alphablend_state>
+		<vertexshader entry="vs" target="vs_2_0" />
+		<pixelshader entry="psArrow" target="ps_2_0" />
+	</pass>
+  </effect>
+</material>	

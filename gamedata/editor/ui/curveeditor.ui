@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="gb2312" ?>
+<UI version="1">
+    <component type="dialog" name="dlgCurveEditor" rect="302,74,400,300" id="100" imageid="1" style="3" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="vertical" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+        <component type="curveeditor" name="ceCurve" rect="71,15,-100,-100" id="101" imageid="600" style="9" border="2" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" TimeAxisUnitLen="20" TimeAxisUnitRes="20.000000" ValueAxisUnitLen="20" ValueAxisUnitRes="20.000000" CurveRes="4" OriginTimeAxis="0.000000" OriginValueAxis="0.990000" EnableScroll="1" CurveColor="-1">
+            <imagelist>
+                <image id="600" type="2" normal="-13228176" hover="-13228176" hold="-13228176" disabled="-13228176" />
+            </imagelist>
+        </component>
+        <component type="spacer" name="spacer1" rect="56,151,-100,30" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="horizontal" layout_gap="4" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096">
+            <component type="spacer" name="spacer2" rect="-64,-66,-100,-100" imageid="-1" style="8" border="-1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-1" outlinecolor="-939524096" />
+            <component type="button" name="btnLoad" rect="229,7,60,24" id="104" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="载入.." alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnSave" rect="232,6,60,24" id="102" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="保存.." alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+            <component type="button" name="btnClose" rect="307,9,60,24" id="103" imageid="1" style="9" border="1" dragmode="1" dropable="0" dragable="0" disabled="0" layout="basic" layout_spc="4,4,4,4" fontcolor="-16777216" eventtransition="0" text="关闭" alignx="1" aligny="1" offsetx="0" offsetY="0" color="0" underlinecolor="0" rotation="0.000000" />
+        </component>
+    </component>
+</UI>
