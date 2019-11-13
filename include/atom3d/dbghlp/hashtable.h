@@ -615,7 +615,7 @@ class ATOM_HashTable
     }
 
     void _M_delete_node(_Node* __n) {
-      std::_Destroy(&__n->_M_val);
+      (&__n->_M_val)->~value_type();
       _M_put_node(__n);
     }
 

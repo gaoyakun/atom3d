@@ -3,6 +3,7 @@
 
 #include <new.h>
 #include <signal.h>
+#include <intrin.h>
 
 static ATOM_AppErrorHandler *_globalErrorHandler = nullptr;
 static ATOM_AppErrorHandler _defaultErrorHandler;

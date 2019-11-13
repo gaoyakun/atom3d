@@ -1,6 +1,5 @@
 SET(Libs 
   lua51.lib
-  lua51d.lib
   dxsdk/x86/d3dx9.lib
   dxsdk/x86/dxguid.lib
   dxsdk/x86/dxerr.lib

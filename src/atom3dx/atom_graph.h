@@ -1,9 +1,8 @@
 #ifndef __ATOMX_ATOM_GRAPH_H
 #define __ATOMX_ATOM_GRAPH_H
 
-#include <AntTweakBar.h>
-#include <TwGraph.h>
 #include "basedefs.h"
+#include "tw_wrapper.h"
 
 class CAtom3DGraph : public ITwGraph
 {

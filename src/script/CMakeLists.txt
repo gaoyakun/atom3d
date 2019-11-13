@@ -15,6 +15,6 @@ SOURCE_GROUP(lua FILES ${LuaSrcHeaders})
 ADD_DEFINITIONS(-DBUILD_ATOM_SCRIPT)
 ADD_LIBRARY(ATOM_script ${ATOM3D_SHARED} ${ScriptSrcHeaders} ${LuaSrcHeaders} ${ScriptPublicHeaders})
 ADD_DEPENDENCIES(ATOM_script ATOM_kernel)
-TARGET_LINK_LIBRARIES(ATOM_script ATOM_kernel debug lua51d optimized lua51)
+TARGET_LINK_LIBRARIES(ATOM_script ATOM_kernel lua51)
 
 INSTALL_TARGET(ATOM_script)

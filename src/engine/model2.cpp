@@ -1,8 +1,31 @@
 #include "StdAfx.h"
+#include <fstream>
 #include "model2.h"
 #include "model.h"
 #include "modelanimationtrack.h"
 #include "instanceskeleton.h"
+
+struct ObjVertex
+{
+	ATOM_Vector3f pos;
+	ATOM_Vector3f normal;
+	ATOM_Vector2f uv;
+	bool operator == (const ObjVertex& other) const
+	{
+		return pos == other.pos && normal == other.normal && uv == other.uv;
+	}
+};
+
+struct ObjMesh
+{
+	ATOM_WSTRING mtlName;
+	ATOM_VECTOR<ATOM_Vector3f> positions;
+	ATOM_VECTOR<ATOM_Vector2f> texcoords;
+	ATOM_VECTOR<ATOM_Vector3f> normals;
+	ATOM_VECTOR<ObjVertex> vertices;
+	ATOM_VECTOR<unsigned short> indices;
+	ATOM_HASHMAP<int, ATOM_VECTOR<int> > vertexMap;
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // wangjian added : 使用压缩网格数据版本
@@ -2314,6 +2337,144 @@ ATOM_SharedModel::~ATOM_SharedModel (void)
 	ATOM_DELETE(_userAttributes);
 }
 
+bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename, bool bMt) {
+	unload();
+	wchar_t mtlFileName[256] = { 0 };
+	wchar_t strCommand[256] = { 0 };
+	ATOM_MAP<ATOM_WSTRING, ObjMesh*> objMeshes;
+	ObjMesh* curMesh = 0;
+
+	std::wifstream fileIn(filename);
+	if (!fileIn) 
+	{
+		return false;
+	}
+	for (;;)
+	{
+		fileIn >> strCommand;
+		if (!fileIn) 
+		{
+			break;
+		}
+		if (0 == wcscmp(strCommand, L"#"))
+		{
+			// comment
+		}
+		else if (0 == wcscmp(strCommand, L"mtllib"))
+		{
+			fileIn >> mtlFileName;
+		}
+		else if (0 == wcscmp(strCommand, L"usemtl"))
+		{
+			wchar_t name[256];
+			fileIn >> name;
+			ATOM_MAP<ATOM_WSTRING, ObjMesh*>::iterator it = objMeshes.find(name);
+			if (it == objMeshes.end())
+			{
+				curMesh = new ObjMesh;
+				objMeshes[name] = curMesh;
+			}
+			else
+			{
+				curMesh = it->second;
+			}
+		}
+		else if (0 == wcscmp(strCommand, L"v"))
+		{
+			if (!curMesh)
+			{
+				curMesh = new ObjMesh;
+				objMeshes[L"_"] = curMesh;
+			}
+			float x, y, z;
+			fileIn >> x >> y >> z;
+			curMesh->positions.push_back(ATOM_Vector3f(x, y, z));
+		}
+		else if (0 == wcscmp(strCommand, L"vt"))
+		{
+			if (!curMesh)
+			{
+				curMesh = new ObjMesh;
+				objMeshes[L"_"] = curMesh;
+			}
+			float u, v;
+			fileIn >> u >> v;
+			curMesh->texcoords.push_back(ATOM_Vector2f(u, v));
+		}
+		else if (0 == wcscmp(strCommand, L"vn"))
+		{
+			if (!curMesh)
+			{
+				curMesh = new ObjMesh;
+				objMeshes[L"_"] = curMesh;
+			}
+			float x, y, z;
+			fileIn >> x >> y >> z;
+			curMesh->normals.push_back(ATOM_Vector3f(x, y, z));
+		}
+		else if (0 == wcscmp(strCommand, L"f"))
+		{
+			if (!curMesh)
+			{
+				curMesh = new ObjMesh;
+				objMeshes[L"_"] = curMesh;
+			}
+			int pos, tex, normal;
+			ObjVertex vertex;
+			for (int i = 0; i < 3; i++)
+			{
+				vertex.pos.set(0.f, 0.f, 0.f);
+				vertex.normal.set(0.f, 0.f, 0.f);
+				vertex.uv.set(0.f, 0.f);
+				fileIn >> pos;
+				vertex.pos = curMesh->positions[pos - 1];
+				if ('/' == fileIn.peek())
+				{
+					fileIn.ignore();
+					if ('/' != fileIn.peek())
+					{
+						fileIn >> tex;
+						vertex.uv = curMesh->texcoords[tex - 1];
+					}
+					if ('/' != fileIn.peek())
+					{
+						fileIn.ignore();
+						fileIn >> normal;
+						vertex.normal = curMesh->normals[normal - 1];
+					}
+				}
+				unsigned short index;
+				bool found = false;
+				ATOM_HASHMAP<int, ATOM_VECTOR<int> >::iterator it = curMesh->vertexMap.find(pos);
+				if (it == curMesh->vertexMap.end()) 
+				{
+					curMesh->vertexMap[pos] = ATOM_VECTOR<int>();
+				}
+				else
+				{
+					for (unsigned k = 0; k < it->second.size(); k++)
+					{
+						if (curMesh->vertices[it->second[k]] == vertex)
+						{
+							index = it->second[k];
+							found = true;
+							break;
+						}
+					}
+				}
+				if (!found)
+				{
+					index = curMesh->vertices.size();
+					curMesh->vertexMap[pos].push_back(index);
+					curMesh->vertices.push_back(vertex);
+				}
+				curMesh->indices.push_back(index);
+			}
+		}
+	}
+	return false;
+}
+
 //--------------------------- wangjian modified -------------------------------//
 // 异步加载不会调用到此，只有同步才会
 bool ATOM_SharedModel::load_nm (ATOM_RenderDevice *device, const char *filename, bool bMt)
@@ -2517,6 +2678,11 @@ bool ATOM_SharedModel::load (ATOM_RenderDevice *device, const char *filename, in
 			ATOM_LOGGER::log("ATOM_SharedModel::load --- sync load model : %s \n", filename );
 		}
 
+		const char* ext = strrchr(filename, '.');
+		if (ext && !stricmp(ext, ".obj")) {
+			return load_obj(device, filename, bMt);
+		}
+
 		unsigned sig;
 
 		{
@@ -2536,15 +2702,7 @@ bool ATOM_SharedModel::load (ATOM_RenderDevice *device, const char *filename, in
 		if (sig == 0x4e334d46)
 		{
 			//--- wangjian modified ---//
-			if( load_nm (device, filename, bMt) )
-			{
-				//// 加载成功 设置完成标记
-				//getAsyncLoader()->SetLoadStage(ATOM_AsyncLoader::ATOM_ASYNCLOAD_ALLFINISHED);
-
-				return true;
-			}
-			return false;
-			//----------------------//
+			return load_nm(device, filename, bMt);
 		}
 
 		// 新版本的模型读取
@@ -3884,6 +4042,11 @@ bool ATOM_SharedModel::load_half (ATOM_RenderDevice *device, const char *filenam
 			ATOM_LOGGER::log("ATOM_SharedModel::load --- sync load model : %s \n", filename );
 		}
 
+		const char* ext = strrchr(filename, '.');
+		if (ext && !stricmp(ext, ".obj")) {
+			return load_obj(device, filename, bMt);
+		}
+
 		unsigned sig;
 
 		{
@@ -4611,6 +4774,11 @@ int ATOM_SharedModel::load_half ( ATOM_RenderDevice *device, const char *filenam
 		if( ATOM_AsyncLoader::isEnableLog() )
 		{
 			ATOM_LOGGER::log("ATOM_SharedModel::load --- sync load model : %s \n", filename );
+		}
+
+		const char* ext = strrchr(filename, '.');
+		if (ext && !stricmp(ext, ".obj")) {
+			return load_obj(device, filename, bMt);
 		}
 
 		unsigned sig;

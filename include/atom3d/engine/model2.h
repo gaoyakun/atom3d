@@ -180,6 +180,7 @@ public:
 
 public:
 	bool load_nm (ATOM_RenderDevice *device, const char *filename, bool bMt = false);
+	bool load_obj (ATOM_RenderDevice* device, const char* filename, bool bMt = false);
 
 	//--- wangjian modified ---//
 	// 异步加载：增加了一个异步加载标记bMt（默认为非异步）

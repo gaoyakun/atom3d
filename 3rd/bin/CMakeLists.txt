@@ -4,7 +4,6 @@ IF (BUILD_WIN64)
 		 x64/OpenAL32.dll
 		 x64/AntTweakBar64.dll
 		 x64/lua51.dll
-		 x64/lua51d.dll
 		 x64/wrap_oal.dll
 	)
 ELSE (BUILD_WIN64)
@@ -13,7 +12,6 @@ ELSE (BUILD_WIN64)
 		 x86/OpenAL32.dll
 		 x86/AntTweakBar.dll
 		 x86/lua51.dll
-		 x86/lua51d.dll
 		 x86/wrap_oal.dll
 	)
 ENDIF (BUILD_WIN64)
