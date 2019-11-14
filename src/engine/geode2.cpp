@@ -619,8 +619,7 @@ bool ATOM_Geode::onLoad(ATOM_RenderDevice *device)
 		//----------------------------------------------//
 		// wangjian modified
 		// _modelFileName 必须是NM2或者NM格式
-		if( strstr( getNodeFileName().c_str(), ".nm") )
-			_modelFileName = getNodeFileName ();
+		_modelFileName = getNodeFileName ();
 		//----------------------------------------------//
 	}
 

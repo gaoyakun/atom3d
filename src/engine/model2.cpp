@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include <fstream>
+#include <sstream>
 #include "model2.h"
 #include "model.h"
 #include "modelanimationtrack.h"
@@ -19,9 +20,6 @@ struct ObjVertex
 struct ObjMesh
 {
 	ATOM_WSTRING mtlName;
-	ATOM_VECTOR<ATOM_Vector3f> positions;
-	ATOM_VECTOR<ATOM_Vector2f> texcoords;
-	ATOM_VECTOR<ATOM_Vector3f> normals;
 	ATOM_VECTOR<ObjVertex> vertices;
 	ATOM_VECTOR<unsigned short> indices;
 	ATOM_HASHMAP<int, ATOM_VECTOR<int> > vertexMap;
@@ -2343,18 +2341,25 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 	wchar_t strCommand[256] = { 0 };
 	ATOM_MAP<ATOM_WSTRING, ObjMesh*> objMeshes;
 	ObjMesh* curMesh = 0;
+	ATOM_VECTOR<ATOM_Vector3f> positions;
+	ATOM_VECTOR<ATOM_Vector2f> texcoords;
+	ATOM_VECTOR<ATOM_Vector3f> normals;
 
-	std::wifstream fileIn(filename);
+	char fn[260];
+	ATOM_GetNativePathName(filename, fn);
+	std::wifstream fileIn(fn);
 	if (!fileIn) 
 	{
 		return false;
 	}
-	for (;;)
+	ATOM_WSTRING line;
+	while (std::getline(fileIn, line))
 	{
-		fileIn >> strCommand;
-		if (!fileIn) 
+		std::wistringstream iss(line.c_str());
+		iss >> strCommand;
+		if (!iss) 
 		{
-			break;
+			continue;
 		}
 		if (0 == wcscmp(strCommand, L"#"))
 		{
@@ -2362,12 +2367,12 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		}
 		else if (0 == wcscmp(strCommand, L"mtllib"))
 		{
-			fileIn >> mtlFileName;
+			iss >> mtlFileName;
 		}
 		else if (0 == wcscmp(strCommand, L"usemtl"))
 		{
 			wchar_t name[256];
-			fileIn >> name;
+			iss >> name;
 			ATOM_MAP<ATOM_WSTRING, ObjMesh*>::iterator it = objMeshes.find(name);
 			if (it == objMeshes.end())
 			{
@@ -2381,36 +2386,21 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		}
 		else if (0 == wcscmp(strCommand, L"v"))
 		{
-			if (!curMesh)
-			{
-				curMesh = new ObjMesh;
-				objMeshes[L"_"] = curMesh;
-			}
 			float x, y, z;
-			fileIn >> x >> y >> z;
-			curMesh->positions.push_back(ATOM_Vector3f(x, y, z));
+			iss >> x >> y >> z;
+			positions.push_back(ATOM_Vector3f(x, y, z));
 		}
 		else if (0 == wcscmp(strCommand, L"vt"))
 		{
-			if (!curMesh)
-			{
-				curMesh = new ObjMesh;
-				objMeshes[L"_"] = curMesh;
-			}
 			float u, v;
-			fileIn >> u >> v;
-			curMesh->texcoords.push_back(ATOM_Vector2f(u, v));
+			iss >> u >> v;
+			texcoords.push_back(ATOM_Vector2f(u, v));
 		}
 		else if (0 == wcscmp(strCommand, L"vn"))
 		{
-			if (!curMesh)
-			{
-				curMesh = new ObjMesh;
-				objMeshes[L"_"] = curMesh;
-			}
 			float x, y, z;
-			fileIn >> x >> y >> z;
-			curMesh->normals.push_back(ATOM_Vector3f(x, y, z));
+			iss >> x >> y >> z;
+			normals.push_back(ATOM_Vector3f(x, y, z));
 		}
 		else if (0 == wcscmp(strCommand, L"f"))
 		{
@@ -2426,21 +2416,21 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 				vertex.pos.set(0.f, 0.f, 0.f);
 				vertex.normal.set(0.f, 0.f, 0.f);
 				vertex.uv.set(0.f, 0.f);
-				fileIn >> pos;
-				vertex.pos = curMesh->positions[pos - 1];
-				if ('/' == fileIn.peek())
+				iss >> pos;
+				vertex.pos = positions[pos - 1];
+				if ('/' == iss.peek())
 				{
-					fileIn.ignore();
-					if ('/' != fileIn.peek())
+					iss.ignore();
+					if ('/' != iss.peek())
 					{
-						fileIn >> tex;
-						vertex.uv = curMesh->texcoords[tex - 1];
+						iss >> tex;
+						vertex.uv = texcoords[tex - 1];
 					}
-					if ('/' != fileIn.peek())
+					if ('/' == iss.peek())
 					{
-						fileIn.ignore();
-						fileIn >> normal;
-						vertex.normal = curMesh->normals[normal - 1];
+						iss.ignore();
+						iss >> normal;
+						vertex.normal = normals[normal - 1];
 					}
 				}
 				unsigned short index;
@@ -2472,7 +2462,76 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 			}
 		}
 	}
-	return false;
+	_boundingbox.beginExtend();
+	for (ATOM_MAP<ATOM_WSTRING, ObjMesh*>::iterator it = objMeshes.begin(); it != objMeshes.end(); it++) {
+		if (it->second->indices.empty()) {
+			continue;
+		}
+		ATOM_SharedMesh* mesh = ATOM_NEW(ATOM_SharedMesh, this);
+		mesh->setGeometry(ATOM_NEW(ATOM_HWInstancingGeometry));
+		ATOM_BBox meshBBox;
+		meshBBox.beginExtend();
+		for (unsigned i = 0; i < it->second->vertices.size(); i++) {
+			meshBBox.extend(it->second->vertices[i].pos);
+		}
+		mesh->setBoundingbox(meshBBox);
+		_boundingbox.extend(meshBBox.getMin());
+		_boundingbox.extend(meshBBox.getMax());
+
+		ATOM_AUTOREF(ATOM_IndexArray) indices = device->allocIndexArray(ATOM_USAGE_STATIC, it->second->indices.size(), false, true);
+		if (!indices)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		void* pIndexData = indices->lock(ATOM_LOCK_WRITEONLY, 0, 0, true);
+		if (!pIndexData)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		memcpy(pIndexData, &it->second->indices[0], sizeof(short)* it->second->indices.size());
+		indices->unlock();
+		mesh->getGeometry()->setIndices(indices.get());
+
+		unsigned attrib = ATOM_VERTEX_ATTRIB_COORD| ATOM_VERTEX_ATTRIB_NORMAL|ATOM_VERTEX_ATTRIB_TEX1_2;
+		ATOM_AUTOREF(ATOM_VertexArray) vertexArray = device->allocVertexArray(attrib, ATOM_USAGE_STATIC, it->second->vertices.size(), true, ATTRIBUTE_FLAG_NONE);
+		if (!vertexArray)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		void* pVertexData = vertexArray->lock(ATOM_LOCK_WRITEONLY, 0, 0, true);
+		if (!pVertexData)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		memcpy(pVertexData, &it->second->vertices[0], sizeof(it->second->vertices[0])* it->second->vertices.size());
+		vertexArray->unlock();
+		((ATOM_HWInstancingGeometry*)mesh->getGeometry())->setStream(vertexArray.get());
+
+		ATOM_STRING coremat_name = "";
+		chooseProperCoreMatName(coremat_name, true);
+		ATOM_AUTOPTR(ATOM_Material) material = ATOM_MaterialManager::createMaterialFromCore(device, coremat_name.c_str());
+		material->getParameterTable()->setInt("hasVertexColor", 0);
+		//material->getParameterTable()->setVector("transparency", (mesh->transparency == 0.f ? ATOM_Vector4f(1.0f) : ATOM_Vector4f(1, 1, 1, mesh->transparency)));
+		//material->getParameterTable()->setFloat ("transparency", (mesh->transparency == 0.f ? 1.f : mesh->transparency));
+		material->getParameterTable()->setFloat ("Kd", 1.f);
+		material->getParameterTable()->setFloat ("Ks", 1.f);
+		material->getParameterTable()->setVector("diffuseColor", ATOM_Vector4f(1.f, 1.f, 1.f, 1.f));
+		material->getParameterTable()->setFloat("shininess", 64.f);
+		material->getParameterTable()->setFloat("glossness", 0.f);
+		mesh->setMaterial(material.get());
+		char strMatName[256] = { 0 };
+		sprintf(strMatName, "%s_%u", filename, _meshes.size());
+		material->setMaterialId(strMatName);
+
+		_meshes.push_back(mesh);
+
+	}
+	getAsyncLoader()->SetLoadStage(ATOM_AsyncLoader::ATOM_ASYNCLOAD_ALLFINISHED);
+	return true;
 }
 
 //--------------------------- wangjian modified -------------------------------//
@@ -3561,7 +3620,7 @@ bool ATOM_SharedModel::saveIsolation (const char *filename)
 			unsigned numVertices, numIndices;
 			ATOM_MultiStreamGeometry *geo = (ATOM_MultiStreamGeometry*)_meshes[i]->getGeometry();
 
-			int attribs[] = {
+			unsigned attribs[] = {
 				ATOM_VERTEX_ATTRIB_NORMAL,
 				ATOM_VERTEX_ATTRIB_PSIZE,
 				ATOM_VERTEX_ATTRIB_PRIMARY_COLOR,
@@ -3822,7 +3881,7 @@ bool ATOM_SharedModel::save (const char *filename)
 		unsigned numVertices, numIndices;
 		ATOM_MultiStreamGeometry *geo = (ATOM_MultiStreamGeometry*)_meshes[i]->getGeometry();
 
-		int attribs[] = {
+		unsigned attribs[] = {
 			ATOM_VERTEX_ATTRIB_NORMAL,
 			ATOM_VERTEX_ATTRIB_PSIZE,
 			ATOM_VERTEX_ATTRIB_PRIMARY_COLOR,
@@ -5428,7 +5487,7 @@ bool ATOM_SharedModel::save_half (const char *filename)
 		unsigned numVertices, numIndices;
 		ATOM_MultiStreamGeometry *geo = (ATOM_MultiStreamGeometry*)_meshes[i]->getGeometry();
 
-		int attribs[] = {
+		unsigned attribs[] = {
 			ATOM_VERTEX_ATTRIB_NORMAL,
 			ATOM_VERTEX_ATTRIB_PSIZE,
 			ATOM_VERTEX_ATTRIB_PRIMARY_COLOR,
