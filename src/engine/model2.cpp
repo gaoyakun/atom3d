@@ -21,8 +21,9 @@ struct ObjMesh
 {
 	ATOM_WSTRING mtlName;
 	ATOM_VECTOR<ObjVertex> vertices;
-	ATOM_VECTOR<unsigned short> indices;
-	ATOM_HASHMAP<int, ATOM_VECTOR<int> > vertexMap;
+	ATOM_VECTOR<unsigned> indices;
+	ATOM_HASHMAP<int, ATOM_VECTOR<unsigned> > vertexMap;
+	unsigned maxIndex;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2353,6 +2354,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		return false;
 	}
 	ATOM_WSTRING line;
+	unsigned maxIndex = 0;
 	while (std::getline(fileIn, line))
 	{
 		std::wistringstream iss(line.c_str());
@@ -2377,6 +2379,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 			if (it == objMeshes.end())
 			{
 				curMesh = new ObjMesh;
+				curMesh->maxIndex = 0;
 				objMeshes[name] = curMesh;
 			}
 			else
@@ -2407,6 +2410,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 			if (!curMesh)
 			{
 				curMesh = new ObjMesh;
+				curMesh->maxIndex = 0;
 				objMeshes[L"_"] = curMesh;
 			}
 			int pos, tex, normal;
@@ -2433,12 +2437,12 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 						vertex.normal = normals[normal - 1];
 					}
 				}
-				unsigned short index;
+				unsigned index;
 				bool found = false;
-				ATOM_HASHMAP<int, ATOM_VECTOR<int> >::iterator it = curMesh->vertexMap.find(pos);
+				ATOM_HASHMAP<int, ATOM_VECTOR<unsigned> >::iterator it = curMesh->vertexMap.find(pos);
 				if (it == curMesh->vertexMap.end()) 
 				{
-					curMesh->vertexMap[pos] = ATOM_VECTOR<int>();
+					curMesh->vertexMap[pos] = ATOM_VECTOR<unsigned>();
 				}
 				else
 				{
@@ -2459,6 +2463,9 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 					curMesh->vertices.push_back(vertex);
 				}
 				curMesh->indices.push_back(index);
+				if (index > curMesh->maxIndex) {
+					curMesh->maxIndex = index;
+				}
 			}
 		}
 	}
@@ -2478,7 +2485,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		_boundingbox.extend(meshBBox.getMin());
 		_boundingbox.extend(meshBBox.getMax());
 
-		ATOM_AUTOREF(ATOM_IndexArray) indices = device->allocIndexArray(ATOM_USAGE_STATIC, it->second->indices.size(), false, true);
+		ATOM_AUTOREF(ATOM_IndexArray) indices = device->allocIndexArray(ATOM_USAGE_STATIC, it->second->indices.size(), true, true);
 		if (!indices)
 		{
 			ATOM_DELETE(mesh);
@@ -2490,7 +2497,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 			ATOM_DELETE(mesh);
 			return false;
 		}
-		memcpy(pIndexData, &it->second->indices[0], sizeof(short)* it->second->indices.size());
+		memcpy(pIndexData, &it->second->indices[0], sizeof(unsigned)* it->second->indices.size());
 		indices->unlock();
 		mesh->getGeometry()->setIndices(indices.get());
 

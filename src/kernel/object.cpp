@@ -2,7 +2,7 @@
 
 static void encodeMatrix(const ATOM_Matrix4x4f &Matrix, char* TheString)
 {
-  sprintf (TheString, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f",
+  sprintf (TheString, "%.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f",
     Matrix.m00, Matrix.m01, Matrix.m02, Matrix.m03,
     Matrix.m10, Matrix.m11, Matrix.m12, Matrix.m13,
     Matrix.m20, Matrix.m21, Matrix.m22, Matrix.m23,

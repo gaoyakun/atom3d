@@ -1782,6 +1782,7 @@ float ATOM_ShapeNode::getShearing (void) const
 void ATOM_ShapeNode::setSize (const ATOM_Vector3f &size)
 {
 	_size = size;
+	invalidateBoundingbox();
 }
 
 const ATOM_Vector3f &ATOM_ShapeNode::getSize (void) const
