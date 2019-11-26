@@ -26,6 +26,15 @@ struct ObjMesh
 	unsigned maxIndex;
 };
 
+struct ObjMtl
+{
+	float Ka[3];
+	float Kd[3];
+	float Ks[3];
+	float Ns;
+	ATOM_WSTRING diffuseMap;
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // wangjian added : 使用压缩网格数据版本
 enum eMODELFLAG
@@ -2341,6 +2350,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 	wchar_t mtlFileName[256] = { 0 };
 	wchar_t strCommand[256] = { 0 };
 	ATOM_MAP<ATOM_WSTRING, ObjMesh*> objMeshes;
+	ATOM_MAP<ATOM_WSTRING, ObjMtl*> objMaterials;
 	ObjMesh* curMesh = 0;
 	ATOM_VECTOR<ATOM_Vector3f> positions;
 	ATOM_VECTOR<ATOM_Vector2f> texcoords;
@@ -2391,7 +2401,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		{
 			float x, y, z;
 			iss >> x >> y >> z;
-			positions.push_back(ATOM_Vector3f(x, y, z));
+			positions.push_back(ATOM_Vector3f(x, y, -z));
 		}
 		else if (0 == wcscmp(strCommand, L"vt"))
 		{

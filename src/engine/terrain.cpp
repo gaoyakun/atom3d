@@ -1362,7 +1362,7 @@ bool ATOM_Terrain::save (const char *filename)
 	ATOM_GetNativePathName (fn.c_str(), buf);
 
 	ATOM_TiXmlDocument doc(buf);
-	ATOM_TiXmlDeclaration decl("1.0", "gb2312", "");
+	ATOM_TiXmlDeclaration decl("1.0", "utf-8", "");
 	doc.InsertEndChild (decl);
 
 	ATOM_TiXmlElement eTerrain("Terrain");

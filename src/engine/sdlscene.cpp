@@ -1022,7 +1022,7 @@ bool ATOM_SDLScene::save (const char *filename, ATOM_Node *parent, ATOM_XmlSaveV
 	ATOM_GetNativePathName (filename, nativeFileName);
 	ATOM_TiXmlDocument doc (nativeFileName);
 
-	ATOM_TiXmlDeclaration eDecl("1.0", "gb2312", "");
+	ATOM_TiXmlDeclaration eDecl("1.0", "utf-8", "");
 	doc.InsertEndChild (eDecl);
 
 	ATOM_TiXmlElement eRoot("ATOM_Scene");
