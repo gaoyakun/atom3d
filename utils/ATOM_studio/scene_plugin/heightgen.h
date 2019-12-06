@@ -181,7 +181,7 @@ private:
 //%%EndVarList
 
 	ATOM_Dialog *_dialog;
-	ATOM_Rect2Di _region;
+	ATOM_Rect2Df _region;
 	ATOM_Point2Di _nearFar;
 	float _cellSize;
 	PluginScene *_plugin;

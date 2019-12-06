@@ -207,7 +207,7 @@ protected:
 
 	ATOM_CLASS(engine, ATOM_Geode, Geode)
 	ATOM_DECLARE_SCRIPT_INTERFACE(ATOM_Geode)
-	ATOM_DECLARE_NODE_FILE_TYPE(ATOM_Geode, Geode, "nm;nm2;obj;geode", "ATOM3D geode2")
+	ATOM_DECLARE_NODE_FILE_TYPE(ATOM_Geode, Geode, "nm;nm2;obj;babylon;geode", "ATOM3D geode2")
 
 	//--- wangjian added ---//
 	// 异步加载：相关函数和成员

@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include <fstream>
 #include <sstream>
+#include <rapidjson/document.h>
 #include "model2.h"
 #include "model.h"
 #include "modelanimationtrack.h"
@@ -19,7 +20,7 @@ struct ObjVertex
 
 struct ObjMesh
 {
-	ATOM_WSTRING mtlName;
+	ATOM_STRING mtlName;
 	ATOM_VECTOR<ObjVertex> vertices;
 	ATOM_VECTOR<unsigned> indices;
 	ATOM_HASHMAP<int, ATOM_VECTOR<unsigned> > vertexMap;
@@ -32,7 +33,18 @@ struct ObjMtl
 	float Kd[3];
 	float Ks[3];
 	float Ns;
-	ATOM_WSTRING diffuseMap;
+	ATOM_STRING diffuseMap;
+	float uvScale[2];
+	float uvBias[2];
+	ObjMtl()
+	{
+		Ka[0] = Ka[1] = Ka[2] = 1.0f;
+		Kd[0] = Kd[1] = Kd[2] = 1.0f;
+		Ks[0] = Ks[1] = Ks[2] = 1.0f;
+		Ns = 0.f;
+		uvScale[0] = uvScale[1] = 1.0f;
+		uvBias[0] = uvBias[1] = 0.f;
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2345,12 +2357,323 @@ ATOM_SharedModel::~ATOM_SharedModel (void)
 	ATOM_DELETE(_userAttributes);
 }
 
-bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename, bool bMt) {
+bool ATOM_SharedModel::load_babylon(ATOM_RenderDevice* device, const char* filename, bool bMt) 
+{
 	unload();
-	wchar_t mtlFileName[256] = { 0 };
-	wchar_t strCommand[256] = { 0 };
-	ATOM_MAP<ATOM_WSTRING, ObjMesh*> objMeshes;
-	ATOM_MAP<ATOM_WSTRING, ObjMtl*> objMaterials;
+	ATOM_VECTOR<ObjMesh*> objMeshes;
+	ATOM_MAP<ATOM_STRING, ObjMtl*> objMaterials;
+	ATOM_MAP<ATOM_STRING, ATOM_VECTOR<ATOM_STRING> > multiObjMaterials;
+	
+	ATOM_AutoFile f(filename, ATOM_VFS::read | ATOM_VFS::text);
+	ATOM_VECTOR<char> file_content(f->size() + 1);
+	char* str = &file_content[0];
+	unsigned n = f->read(str, f->size());
+	str[n] = '\0';
+
+	rapidjson::Document doc;
+	if (doc.Parse(str).HasParseError())
+	{
+		return false;
+	}
+	if (!doc.IsObject())
+	{
+		return false;
+	}
+	if (!doc.HasMember("meshes"))
+	{
+		return false;
+	}
+	if (doc.HasMember("multiMaterials"))
+	{
+		const rapidjson::Value& multiMaterials = doc["multiMaterials"];
+		if (multiMaterials.IsArray())
+		{
+			for (unsigned i = 0; i < multiMaterials.Size(); i++)
+			{
+				const rapidjson::Value& mmat = multiMaterials[i];
+				ATOM_STRING id = mmat.HasMember("id") ? mmat["id"].GetString() : "";
+				if (mmat.HasMember("materials"))
+				{
+					for (unsigned k = 0; k < mmat["materials"].Size(); k++)
+					{
+						multiObjMaterials[id].push_back(mmat["materials"][k].GetString());
+					}
+				}
+			}
+		}
+	}
+	if (doc.HasMember("materials"))
+	{
+		const rapidjson::Value& materials = doc["materials"];
+		if (materials.IsArray())
+		{
+			for (unsigned i = 0; i < materials.Size(); i++)
+			{
+				const rapidjson::Value& mat = materials[i];
+				ATOM_STRING id = mat.HasMember("id") ? mat["id"].GetString() : "";
+				ATOM_MAP<ATOM_STRING, ObjMtl*>::iterator it = objMaterials.find(id);
+				ObjMtl* mtl;
+				if (it == objMaterials.end())
+				{
+					mtl = new ObjMtl;
+					objMaterials[id] = mtl;
+				}
+				else
+				{
+					mtl = it->second;
+				}
+				ATOM_STRING type = mat.HasMember("customType") ? mat["customType"].GetString() : "";
+				if (type == "BABYLON.StandardMaterial")
+				{
+					if (mat.HasMember("diffuse"))
+					{
+						const rapidjson::Value& diffuse = mat["diffuse"];
+						mtl->Kd[0] = diffuse[0].GetFloat();
+						mtl->Kd[1] = diffuse[1].GetFloat();
+						mtl->Kd[2] = diffuse[2].GetFloat();
+					}
+					if (mat.HasMember("diffuseTexture"))
+					{
+						const rapidjson::Value& texture = mat["diffuseTexture"];
+						mtl->diffuseMap = texture["name"].GetString();
+						mtl->uvScale[0] = texture.HasMember("uScale") ? texture["uScale"].GetFloat() : 1.0f;
+						mtl->uvScale[1] = texture.HasMember("vScale") ? texture["vScale"].GetFloat() : 1.0f;
+						mtl->uvBias[0] = texture.HasMember("uOffset") ? texture["uOffset"].GetFloat() : 1.0f;
+						mtl->uvBias[1] = texture.HasMember("vOffset") ? texture["vOffset"].GetFloat() : 1.0f;
+					}
+				}
+				else if (type == "BABYLON.PBRMetallicRoughnessMaterial")
+				{
+					if (mat.HasMember("baseColor"))
+					{
+						const rapidjson::Value& diffuse = mat["baseColor"];
+						mtl->Kd[0] = diffuse[0].GetFloat();
+						mtl->Kd[1] = diffuse[1].GetFloat();
+						mtl->Kd[2] = diffuse[2].GetFloat();
+					}
+					if (mat.HasMember("baseTexture"))
+					{
+						const rapidjson::Value& texture = mat["baseTexture"];
+						if (texture.IsObject()) {
+							mtl->diffuseMap = texture["name"].GetString();
+							mtl->uvScale[0] = texture.HasMember("uScale") ? texture["uScale"].GetFloat() : 1.0f;
+							mtl->uvScale[1] = texture.HasMember("vScale") ? texture["vScale"].GetFloat() : 1.0f;
+							mtl->uvBias[0] = texture.HasMember("uOffset") ? texture["uOffset"].GetFloat() : 1.0f;
+							mtl->uvBias[1] = texture.HasMember("vOffset") ? texture["vOffset"].GetFloat() : 1.0f;
+						}
+					}
+				}
+			}
+		}
+	}
+	const rapidjson::Value &valMeshes = doc["meshes"];
+	if (!valMeshes.IsArray() || valMeshes.Size() == 0)
+	{
+		return false;
+	}
+	for (unsigned i = 0; i < valMeshes.Size(); i++)
+	{
+		ATOM_VECTOR<ATOM_Vector3f> positions;
+		ATOM_VECTOR<ATOM_Vector3f> normals;
+		ATOM_VECTOR<ATOM_Vector2f> texcoords;
+		ATOM_VECTOR<unsigned> indices;
+		const rapidjson::Value& valMesh = valMeshes[i];
+		if (!valMesh.HasMember("subMeshes"))
+		{
+			continue;
+		}
+		const rapidjson::Value& subMeshes = valMesh["subMeshes"];
+		if (!subMeshes.IsArray() || subMeshes.Size() == 0)
+		{
+			continue;
+		}
+		ATOM_STRING materialId = valMesh.HasMember("materialId") ? valMesh["materialId"].GetString() : "";
+		ATOM_VECTOR<ATOM_STRING> subM;
+		if (multiObjMaterials.find(materialId) != multiObjMaterials.end())
+		{
+			subM = multiObjMaterials[materialId];
+		}
+		else
+		{
+			subM.push_back(materialId);
+		}
+		if (valMesh.HasMember("indices"))
+		{
+			const rapidjson::Value& ind = valMesh["indices"];
+			if (ind.IsArray() && ind.Size() > 0)
+			{
+				indices.resize(ind.Size());
+				for (unsigned k = 0; k < indices.size(); k++)
+				{
+					indices[k] = ind[k].GetUint();
+				}
+			}
+		}
+		if (valMesh.HasMember("positions"))
+		{
+			const rapidjson::Value& pos = valMesh["positions"];
+			if (pos.IsArray() && pos.Size() > 0)
+			{
+				positions.resize(pos.Size()/3);
+				for (unsigned k = 0; k < positions.size(); k++)
+				{
+					positions[k].set(pos[k*3].GetFloat(), pos[k*3+1].GetFloat(), pos[k*3+2].GetFloat());
+				}
+			}
+		}
+		if (valMesh.HasMember("normals"))
+		{
+			const rapidjson::Value& norm = valMesh["normals"];
+			if (norm.IsArray() && norm.Size() > 0)
+			{
+				normals.resize(norm.Size() / 3);
+				for (unsigned k = 0; k < normals.size(); k++)
+				{
+					normals[k].set(norm[k * 3].GetFloat(), norm[k * 3 + 1].GetFloat(), norm[k * 3 + 2].GetFloat());
+				}
+			}
+		}
+		if (valMesh.HasMember("uvs"))
+		{
+			const rapidjson::Value& uv = valMesh["uvs"];
+			if (uv.IsArray() && uv.Size() > 0)
+			{
+				texcoords.resize(uv.Size() / 2);
+				for (unsigned k = 0; k < texcoords.size(); k++)
+				{
+					texcoords[k].set(uv[k * 2].GetFloat(), uv[k * 2 + 1].GetFloat());
+				}
+			}
+		}
+		for (unsigned k = 0; k < subMeshes.Size(); k++)
+		{
+			const rapidjson::Value& subMesh = subMeshes[k];
+			if (!subMesh.IsObject())
+			{
+				continue;
+			}
+			if (!subMesh.HasMember("materialIndex"))
+			{
+				continue;
+			}
+			ObjMesh* mesh = new ObjMesh;
+			mesh->mtlName = subM[subMesh["materialIndex"].GetUint()];
+			unsigned verticesStart = subMesh["verticesStart"].GetUint();
+			unsigned verticesCount = subMesh["verticesCount"].GetUint();
+			unsigned indexStart = subMesh["indexStart"].GetUint();
+			unsigned indexCount = subMesh["indexCount"].GetUint();
+			ATOM_MAP<ATOM_STRING, ObjMtl*>::iterator mtl_it = objMaterials.find(mesh->mtlName);
+			ObjMtl* mtl = mtl_it != objMaterials.end() ? mtl_it->second : 0;
+			for (unsigned v = 0; v < verticesCount; v++)
+			{
+				ObjVertex ov;
+				ov.pos = positions[verticesStart + v];
+				ov.normal = normals[verticesStart + v];
+				ov.uv = texcoords[verticesStart + v];
+				if (mtl)
+				{
+					ov.uv.x *= mtl->uvScale[0];
+					ov.uv.x += mtl->uvBias[0];
+					ov.uv.y *= mtl->uvScale[1];
+					ov.uv.y += mtl->uvBias[1];
+				}
+				mesh->vertices.push_back(ov);
+			}
+			for (unsigned v = 0; v < indexCount; v++)
+			{
+				mesh->indices.push_back(indices[indexStart + v]-verticesStart);
+			}
+			objMeshes.push_back(mesh);
+		}
+	}
+	_boundingbox.beginExtend();
+	for (unsigned i = 0; i < objMeshes.size(); i++) {
+		ATOM_SharedMesh* mesh = ATOM_NEW(ATOM_SharedMesh, this);
+		mesh->setGeometry(ATOM_NEW(ATOM_HWInstancingGeometry));
+		ATOM_BBox meshBBox;
+		meshBBox.beginExtend();
+		for (unsigned k = 0; k < objMeshes[i]->vertices.size(); k++) {
+			meshBBox.extend(objMeshes[i]->vertices[k].pos);
+		}
+		mesh->setBoundingbox(meshBBox);
+		_boundingbox.extend(meshBBox.getMin());
+		_boundingbox.extend(meshBBox.getMax());
+
+		ATOM_AUTOREF(ATOM_IndexArray) indices = device->allocIndexArray(ATOM_USAGE_STATIC, objMeshes[i]->indices.size(), true, true);
+		if (!indices)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		void* pIndexData = indices->lock(ATOM_LOCK_WRITEONLY, 0, 0, true);
+		if (!pIndexData)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		memcpy(pIndexData, &objMeshes[i]->indices[0], sizeof(unsigned) * objMeshes[i]->indices.size());
+		indices->unlock();
+		mesh->getGeometry()->setIndices(indices.get());
+
+		unsigned attrib = ATOM_VERTEX_ATTRIB_COORD | ATOM_VERTEX_ATTRIB_NORMAL | ATOM_VERTEX_ATTRIB_TEX1_2;
+		ATOM_AUTOREF(ATOM_VertexArray) vertexArray = device->allocVertexArray(attrib, ATOM_USAGE_STATIC, objMeshes[i]->vertices.size(), true, ATTRIBUTE_FLAG_NONE);
+		if (!vertexArray)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		void* pVertexData = vertexArray->lock(ATOM_LOCK_WRITEONLY, 0, 0, true);
+		if (!pVertexData)
+		{
+			ATOM_DELETE(mesh);
+			return false;
+		}
+		memcpy(pVertexData, &objMeshes[i]->vertices[0], sizeof(objMeshes[i]->vertices[0]) * objMeshes[i]->vertices.size());
+		vertexArray->unlock();
+		((ATOM_HWInstancingGeometry*)mesh->getGeometry())->setStream(vertexArray.get());
+
+		ATOM_STRING coremat_name = "";
+		chooseProperCoreMatName(coremat_name, true);
+		ATOM_AUTOPTR(ATOM_Material) material = ATOM_MaterialManager::createMaterialFromCore(device, coremat_name.c_str());
+		material->getParameterTable()->setInt("hasVertexColor", 0);
+		//material->getParameterTable()->setVector("transparency", (mesh->transparency == 0.f ? ATOM_Vector4f(1.0f) : ATOM_Vector4f(1, 1, 1, mesh->transparency)));
+		//material->getParameterTable()->setFloat ("transparency", (mesh->transparency == 0.f ? 1.f : mesh->transparency));
+		material->getParameterTable()->setFloat("Kd", 1.f);
+		material->getParameterTable()->setFloat("Ks", 1.f);
+		material->getParameterTable()->setVector("diffuseColor", ATOM_Vector4f(1.f, 1.f, 1.f, 1.f));
+		material->getParameterTable()->setFloat("shininess", 64.f);
+		material->getParameterTable()->setFloat("glossness", 0.f);
+		material->getParameterTable()->setInt("cullmode", ATOM_RenderAttributes::CullMode_None);
+		ATOM_MAP<ATOM_STRING, ObjMtl*>::iterator mtl_it = objMaterials.find(objMeshes[i]->mtlName);
+		if (mtl_it != objMaterials.end())
+		{
+			const ObjMtl* mtl = mtl_it->second;
+			if (mtl->diffuseMap.length() > 0) {
+				ATOM_STRING texture = filename;
+				texture = texture.substr(0, texture.find_last_of("/") + 1) + mtl->diffuseMap;
+				material->getParameterTable()->setTexture("diffuseTexture", texture.c_str());
+				material->getParameterTable()->setInt("hasDiffuseTexture", 1);
+			}
+			material->getParameterTable()->setVector("diffuseColor", ATOM_Vector4f(mtl->Kd[0], mtl->Kd[1], mtl->Kd[2], 1.f));
+		}
+
+		mesh->setMaterial(material.get());
+		char strMatName[256] = { 0 };
+		sprintf(strMatName, "%s_%u", filename, _meshes.size());
+		material->setMaterialId(strMatName);
+
+		_meshes.push_back(mesh);
+	}
+	getAsyncLoader()->SetLoadStage(ATOM_AsyncLoader::ATOM_ASYNCLOAD_ALLFINISHED);
+	return true;
+}
+
+bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename, bool bMt) 
+{
+	unload();
+	char strCommand[256] = { 0 };
+	ATOM_MAP<ATOM_STRING, ObjMesh*> objMeshes;
+	ATOM_MAP<ATOM_STRING, ObjMtl*> objMaterials;
 	ObjMesh* curMesh = 0;
 	ATOM_VECTOR<ATOM_Vector3f> positions;
 	ATOM_VECTOR<ATOM_Vector2f> texcoords;
@@ -2358,38 +2681,148 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 
 	char fn[260];
 	ATOM_GetNativePathName(filename, fn);
-	std::wifstream fileIn(fn);
+	std::ifstream fileIn(fn);
 	if (!fileIn) 
 	{
 		return false;
 	}
-	ATOM_WSTRING line;
+	ATOM_STRING line;
 	unsigned maxIndex = 0;
 	while (std::getline(fileIn, line))
 	{
-		std::wistringstream iss(line.c_str());
+		std::istringstream iss(line.c_str());
 		iss >> strCommand;
 		if (!iss) 
 		{
 			continue;
 		}
-		if (0 == wcscmp(strCommand, L"#"))
+		if (0 == strcmp(strCommand, "#"))
 		{
 			// comment
+			continue;
 		}
-		else if (0 == wcscmp(strCommand, L"mtllib"))
+		else if (0 == strcmp(strCommand, "mtllib"))
 		{
-			iss >> mtlFileName;
+			ATOM_STRING mtlBaseName;
+			iss >> mtlBaseName;
+			ATOM_STRING mtlFn = fn;
+			mtlFn = mtlFn.substr(0, mtlFn.find_last_of("/\\") + 1) + mtlBaseName;
+			std::ifstream mtlFileIn(mtlFn.c_str());
+			if (mtlFileIn)
+			{
+				ATOM_STRING ln;
+				ATOM_STRING cmd;
+				ObjMtl* curMtl = 0;
+				while (std::getline(mtlFileIn, ln))
+				{
+					std::istringstream ss(ln.c_str());
+					ss >> cmd;
+					if (!ss)
+					{
+						continue;
+					}
+					if (cmd == "#")
+					{
+						continue;
+					}
+					else if (cmd == "newmtl")
+					{
+						ATOM_STRING mtlname;
+						ss >> mtlname;
+						if (objMaterials.find(mtlname) != objMaterials.end())
+						{
+							curMtl = objMaterials[mtlname];
+						}
+						else
+						{
+							curMtl = new ObjMtl;
+							objMaterials[mtlname] = curMtl;
+						}
+					}
+					else if (cmd == "Ka")
+					{
+						if (curMtl)
+						{
+							ss >> curMtl->Ka[0] >> curMtl->Ka[1] >> curMtl->Ka[2];
+						}
+					}
+					else if (cmd == "Kd")
+					{
+						if (curMtl)
+						{
+							ss >> curMtl->Kd[0] >> curMtl->Kd[1] >> curMtl->Kd[2];
+						}
+					}
+					else if (cmd == "Ks")
+					{
+						if (curMtl)
+						{
+							ss >> curMtl->Ks[0] >> curMtl->Ks[1] >> curMtl->Ks[2];
+						}
+					}
+					else if (cmd == "map_Ka")
+					{
+						if (curMtl && curMtl->diffuseMap.length() == 0)
+						{
+							ATOM_STRING s;
+							for (;;)
+							{
+								char ch = ss.get();
+								if (ss)
+								{
+									s += ch;
+								}
+								else
+								{
+									break;
+								}
+							}
+							size_t p = s.find_last_of("/\\");
+							if (p != s.npos)
+							{
+								s = s.substr(p + 1);
+							}
+							curMtl->diffuseMap = s;
+						}
+					}
+					else if (cmd == "map_Kd")
+					{
+						if (curMtl)
+						{
+							ATOM_STRING s;
+							for (;;)
+							{
+								char ch = ss.get();
+								if (ss)
+								{
+									s += ch;
+								}
+								else
+								{
+									break;
+								}
+							}
+							size_t p = s.find_last_of("/\\");
+							if (p != s.npos)
+							{
+								s = s.substr(p + 1);
+							}
+							curMtl->diffuseMap = s;
+						}
+					}
+				}
+			}
 		}
-		else if (0 == wcscmp(strCommand, L"usemtl"))
+		else if (0 == strcmp(strCommand, "usemtl"))
 		{
-			wchar_t name[256];
+			char name[256];
 			iss >> name;
-			ATOM_MAP<ATOM_WSTRING, ObjMesh*>::iterator it = objMeshes.find(name);
+			ATOM_MAP<ATOM_STRING, ObjMesh*>::iterator it = objMeshes.find(name);
 			if (it == objMeshes.end())
 			{
 				curMesh = new ObjMesh;
 				curMesh->maxIndex = 0;
+				curMesh->mtlName = name;
 				objMeshes[name] = curMesh;
 			}
 			else
@@ -2397,31 +2830,31 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 				curMesh = it->second;
 			}
 		}
-		else if (0 == wcscmp(strCommand, L"v"))
+		else if (0 == strcmp(strCommand, "v"))
 		{
 			float x, y, z;
 			iss >> x >> y >> z;
 			positions.push_back(ATOM_Vector3f(x, y, -z));
 		}
-		else if (0 == wcscmp(strCommand, L"vt"))
+		else if (0 == strcmp(strCommand, "vt"))
 		{
 			float u, v;
 			iss >> u >> v;
 			texcoords.push_back(ATOM_Vector2f(u, v));
 		}
-		else if (0 == wcscmp(strCommand, L"vn"))
+		else if (0 == strcmp(strCommand, "vn"))
 		{
 			float x, y, z;
 			iss >> x >> y >> z;
 			normals.push_back(ATOM_Vector3f(x, y, z));
 		}
-		else if (0 == wcscmp(strCommand, L"f"))
+		else if (0 == strcmp(strCommand, "f"))
 		{
 			if (!curMesh)
 			{
 				curMesh = new ObjMesh;
 				curMesh->maxIndex = 0;
-				objMeshes[L"_"] = curMesh;
+				objMeshes["_"] = curMesh;
 			}
 			int pos, tex, normal;
 			ObjVertex vertex;
@@ -2480,7 +2913,7 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		}
 	}
 	_boundingbox.beginExtend();
-	for (ATOM_MAP<ATOM_WSTRING, ObjMesh*>::iterator it = objMeshes.begin(); it != objMeshes.end(); it++) {
+	for (ATOM_MAP<ATOM_STRING, ObjMesh*>::iterator it = objMeshes.begin(); it != objMeshes.end(); it++) {
 		if (it->second->indices.empty()) {
 			continue;
 		}
@@ -2539,6 +2972,18 @@ bool ATOM_SharedModel::load_obj(ATOM_RenderDevice* device, const char* filename,
 		material->getParameterTable()->setVector("diffuseColor", ATOM_Vector4f(1.f, 1.f, 1.f, 1.f));
 		material->getParameterTable()->setFloat("shininess", 64.f);
 		material->getParameterTable()->setFloat("glossness", 0.f);
+		ATOM_MAP<ATOM_STRING, ObjMtl*>::iterator mtl_it = objMaterials.find (it->second->mtlName);
+		if (mtl_it != objMaterials.end())
+		{
+			const ObjMtl* mtl = mtl_it->second;
+			if (mtl->diffuseMap.length() > 0) {
+				ATOM_STRING texture = filename;
+				texture = texture.substr(0, texture.find_last_of("/") + 1) + mtl->diffuseMap;
+				material->getParameterTable()->setTexture("diffuseTexture", texture.c_str());
+				material->getParameterTable()->setInt("hasDiffuseTexture", 1);
+			}
+		}
+
 		mesh->setMaterial(material.get());
 		char strMatName[256] = { 0 };
 		sprintf(strMatName, "%s_%u", filename, _meshes.size());
@@ -2757,6 +3202,9 @@ bool ATOM_SharedModel::load (ATOM_RenderDevice *device, const char *filename, in
 		const char* ext = strrchr(filename, '.');
 		if (ext && !stricmp(ext, ".obj")) {
 			return load_obj(device, filename, bMt);
+		}
+		if (ext && !stricmp(ext, ".babylon")) {
+			return load_babylon(device, filename, bMt);
 		}
 
 		unsigned sig;
